@@ -17,6 +17,7 @@ require (
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/go-playground/validator/v10 v10.26.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
+	github.com/oklog/ulid v1.3.1
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/crypto v0.33.0 // indirect
 	golang.org/x/net v0.34.0 // indirect

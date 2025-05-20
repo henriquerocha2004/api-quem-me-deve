@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -65,5 +66,43 @@ func (c *DebtController) GetClientUserDebts() http.HandlerFunc {
 		}
 
 		response(w, http.StatusOK, output)
+	})
+}
+
+func (c *DebtController) GetDebtInstallments() http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		clientId := chi.URLParam(r, "clientId")
+		if clientId == "" {
+			response(w, http.StatusBadRequest, "clientId is required")
+			return
+		}
+
+		clientIdParsed, err := ulid.Parse(clientId)
+		if err != nil {
+			log.Println(err)
+			response(w, http.StatusBadRequest, "clientId invalid")
+			return
+		}
+
+		debtId := chi.URLParam(r, "debtId")
+		if debtId == "" {
+			response(w, http.StatusBadRequest, "debtId is required")
+		}
+
+		debtIdParsed, err := ulid.Parse(debtId)
+		if err != nil {
+			log.Println(err)
+			response(w, http.StatusBadRequest, "debtId invalid")
+			return
+		}
+
+		result := c.DebtService.GetDebtInstallments(r.Context(), clientIdParsed, debtIdParsed)
+
+		if result.Status == "error" {
+			response(w, http.StatusInternalServerError, result.Message)
+			return
+		}
+
+		response(w, http.StatusOK, result)
 	})
 }

@@ -57,6 +57,21 @@ func (mr *MockReaderMockRecorder) ClientUserDebts(ctx, clientUserId any) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientUserDebts", reflect.TypeOf((*MockReader)(nil).ClientUserDebts), ctx, clientUserId)
 }
 
+// DebtInstallments mocks base method.
+func (m *MockReader) DebtInstallments(ctx context.Context, debtId ulid.ULID) ([]*debt.Installment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DebtInstallments", ctx, debtId)
+	ret0, _ := ret[0].([]*debt.Installment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DebtInstallments indicates an expected call of DebtInstallments.
+func (mr *MockReaderMockRecorder) DebtInstallments(ctx, debtId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DebtInstallments", reflect.TypeOf((*MockReader)(nil).DebtInstallments), ctx, debtId)
+}
+
 // MockWriter is a mock of Writer interface.
 type MockWriter struct {
 	ctrl     *gomock.Controller
@@ -134,6 +149,21 @@ func (mr *MockRepositoryMockRecorder) ClientUserDebts(ctx, clientUserId any) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientUserDebts", reflect.TypeOf((*MockRepository)(nil).ClientUserDebts), ctx, clientUserId)
 }
 
+// DebtInstallments mocks base method.
+func (m *MockRepository) DebtInstallments(ctx context.Context, debtId ulid.ULID) ([]*debt.Installment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DebtInstallments", ctx, debtId)
+	ret0, _ := ret[0].([]*debt.Installment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DebtInstallments indicates an expected call of DebtInstallments.
+func (mr *MockRepositoryMockRecorder) DebtInstallments(ctx, debtId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DebtInstallments", reflect.TypeOf((*MockRepository)(nil).DebtInstallments), ctx, debtId)
+}
+
 // Save mocks base method.
 func (m *MockRepository) Save(ctx context.Context, arg1 *debt.Debt) error {
 	m.ctrl.T.Helper()
@@ -146,4 +176,43 @@ func (m *MockRepository) Save(ctx context.Context, arg1 *debt.Debt) error {
 func (mr *MockRepositoryMockRecorder) Save(ctx, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockRepository)(nil).Save), ctx, arg1)
+}
+
+// MockClientReader is a mock of ClientReader interface.
+type MockClientReader struct {
+	ctrl     *gomock.Controller
+	recorder *MockClientReaderMockRecorder
+	isgomock struct{}
+}
+
+// MockClientReaderMockRecorder is the mock recorder for MockClientReader.
+type MockClientReaderMockRecorder struct {
+	mock *MockClientReader
+}
+
+// NewMockClientReader creates a new mock instance.
+func NewMockClientReader(ctrl *gomock.Controller) *MockClientReader {
+	mock := &MockClientReader{ctrl: ctrl}
+	mock.recorder = &MockClientReaderMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockClientReader) EXPECT() *MockClientReaderMockRecorder {
+	return m.recorder
+}
+
+// ClientExists mocks base method.
+func (m *MockClientReader) ClientExists(ctx context.Context, id ulid.ULID) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClientExists", ctx, id)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ClientExists indicates an expected call of ClientExists.
+func (mr *MockClientReaderMockRecorder) ClientExists(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClientExists", reflect.TypeOf((*MockClientReader)(nil).ClientExists), ctx, id)
 }

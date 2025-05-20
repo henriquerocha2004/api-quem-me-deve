@@ -2,7 +2,6 @@ package debt
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 
@@ -12,20 +11,22 @@ import (
 type Service interface {
 	CreateDebt(ctx context.Context, debt *DebtDto) DebtResponse
 	GetUserDebts(ctx context.Context, userId ulid.ULID) DebtResponse
+	GetDebtInstallments(ctx context.Context, clientId, debtId ulid.ULID) DebtResponse
 }
 
 type debtService struct {
-	repo Repository
+	debtRepo   Repository
+	clientRepo ClientReader
 }
 
-func NewDebtService(repo Repository) *debtService {
+func NewDebtService(debtRepo Repository, cliRepo ClientReader) *debtService {
 	return &debtService{
-		repo: repo,
+		debtRepo:   debtRepo,
+		clientRepo: cliRepo,
 	}
 }
 
 func (s *debtService) CreateDebt(ctx context.Context, d *DebtDto) DebtResponse {
-
 	now := time.Now()
 	dueDate, _ := time.Parse(time.DateOnly, d.DueDate)
 	clientUserId, _ := ulid.Parse(d.UserClientId)
@@ -80,7 +81,7 @@ func (s *debtService) CreateDebt(ctx context.Context, d *DebtDto) DebtResponse {
 		}
 	}
 
-	err = s.repo.Save(ctx, debt)
+	err = s.debtRepo.Save(ctx, debt)
 	if err != nil {
 		log.Println("Error saving debt:", err)
 		return DebtResponse{
@@ -97,7 +98,7 @@ func (s *debtService) CreateDebt(ctx context.Context, d *DebtDto) DebtResponse {
 }
 
 func (s *debtService) GetUserDebts(ctx context.Context, userId ulid.ULID) DebtResponse {
-	debts, err := s.repo.ClientUserDebts(ctx, userId)
+	debts, err := s.debtRepo.ClientUserDebts(ctx, userId)
 	if err != nil {
 		log.Println("Error retrieving debts:", err)
 		return DebtResponse{
@@ -128,11 +129,66 @@ func (s *debtService) GetUserDebts(ctx context.Context, userId ulid.ULID) DebtRe
 			ServiceIds:           s.getServiceIds(d.ServiceIds),
 		})
 	}
-	fmt.Println(debtsDto)
+
 	return DebtResponse{
 		Status:  "success",
 		Message: "debts retrieved successfully",
 		Data:    debtsDto,
+	}
+}
+
+func (s *debtService) GetDebtInstallments(ctx context.Context, clientId, debtId ulid.ULID) DebtResponse {
+	cliExists, err := s.clientRepo.ClientExists(ctx, clientId)
+	if err != nil {
+		log.Println(err)
+		return DebtResponse{
+			Status:  "error",
+			Message: "error in validate clientid provided",
+		}
+	}
+
+	if !cliExists {
+		return DebtResponse{
+			Status:  "error",
+			Message: "client not found",
+		}
+	}
+
+	installments, err := s.debtRepo.DebtInstallments(ctx, debtId)
+	if err != nil {
+		log.Println(err)
+		return DebtResponse{
+			Status:  "error",
+			Message: "failed to get debt installments",
+		}
+	}
+
+	var installmentsDto []InstallmentDto
+
+	for _, installment := range installments {
+		paymentDate := ""
+
+		if installment.PaymentDate != nil {
+			paymentDate = installment.PaymentDate.Format(time.DateOnly)
+		}
+
+		installmentsDto = append(installmentsDto, InstallmentDto{
+			Id:            installment.Id.String(),
+			Description:   installment.Description,
+			Value:         installment.Value,
+			DueDate:       installment.DueDate.Format(time.DateOnly),
+			DebDate:       installment.DebDate.Format(time.DateOnly),
+			Status:        installment.Status.String(),
+			PaymentDate:   paymentDate,
+			PaymentMethod: installment.PaymentMethod,
+			Number:        installment.Number,
+		})
+	}
+
+	return DebtResponse{
+		Status:  "success",
+		Message: "installments retrieved",
+		Data:    installmentsDto,
 	}
 }
 

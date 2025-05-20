@@ -35,3 +35,19 @@ func (m *DebtMemoryRepository) ClientUserDebts(ctx context.Context, clientId uli
 
 	return clientDebt, nil
 }
+
+func (m *DebtMemoryRepository) DebtInstallments(ctx context.Context, debtId ulid.ULID) ([]*debt.Installment, error) {
+	var installments []*debt.Installment
+
+	for _, debt := range m.Debts {
+		if debt.Id != debtId {
+			continue
+		}
+
+		for _, installment := range debt.Intallments {
+			installments = append(installments, &installment)
+		}
+	}
+
+	return installments, nil
+}

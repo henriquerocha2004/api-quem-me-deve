@@ -19,9 +19,10 @@ func TestDebtServiceTests(t *testing.T) {
 		defer ctrl.Finish()
 		dueDate := time.Now().AddDate(0, 0, 1)
 
-		repository := mocks.NewMockRepository(ctrl)
-		repository.EXPECT().Save(gomock.Any(), gomock.Any()).Return(nil)
-		service := debt.NewDebtService(repository)
+		debtRepo := mocks.NewMockRepository(ctrl)
+		cliRepo := mocks.NewMockClientReader(ctrl)
+		debtRepo.EXPECT().Save(gomock.Any(), gomock.Any()).Return(nil)
+		service := debt.NewDebtService(debtRepo, cliRepo)
 		d := &debt.DebtDto{
 			Description:          "Test Debt",
 			TotalValue:           1000,
@@ -46,8 +47,9 @@ func TestDebtServiceTests(t *testing.T) {
 		defer ctrl.Finish()
 
 		dueDate := time.Now().AddDate(0, 0, 1)
-		repository := mocks.NewMockRepository(ctrl)
-		service := debt.NewDebtService(repository)
+		debtRepo := mocks.NewMockRepository(ctrl)
+		cliRepo := mocks.NewMockClientReader(ctrl)
+		service := debt.NewDebtService(debtRepo, cliRepo)
 		d := &debt.DebtDto{
 			Description:          "Test Debt",
 			TotalValue:           -1000,
@@ -72,8 +74,9 @@ func TestDebtServiceTests(t *testing.T) {
 		defer ctrl.Finish()
 
 		dueDate := time.Now().AddDate(0, 0, -1)
-		repository := mocks.NewMockRepository(ctrl)
-		service := debt.NewDebtService(repository)
+		debtRepo := mocks.NewMockRepository(ctrl)
+		cliRepo := mocks.NewMockClientReader(ctrl)
+		service := debt.NewDebtService(debtRepo, cliRepo)
 		d := &debt.DebtDto{
 			Description:          "Test Debt",
 			TotalValue:           1000,
@@ -97,8 +100,9 @@ func TestDebtServiceTests(t *testing.T) {
 		defer ctrl.Finish()
 
 		dueDate := time.Now().AddDate(0, 0, 1)
-		repository := mocks.NewMockRepository(ctrl)
-		service := debt.NewDebtService(repository)
+		debtRepo := mocks.NewMockRepository(ctrl)
+		cliRepo := mocks.NewMockClientReader(ctrl)
+		service := debt.NewDebtService(debtRepo, cliRepo)
 		d := &debt.DebtDto{
 			Description:          "Test Debt",
 			TotalValue:           1000,
@@ -122,8 +126,9 @@ func TestDebtServiceTests(t *testing.T) {
 		defer ctrl.Finish()
 
 		dueDate := time.Now().AddDate(0, 0, 1)
-		repository := mocks.NewMockRepository(ctrl)
-		service := debt.NewDebtService(repository)
+		debtRepo := mocks.NewMockRepository(ctrl)
+		cliRepo := mocks.NewMockClientReader(ctrl)
+		service := debt.NewDebtService(debtRepo, cliRepo)
 		d := &debt.DebtDto{
 			Description:          "Test Debt",
 			TotalValue:           1000,
@@ -146,8 +151,9 @@ func TestDebtServiceTests(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		repository := mocks.NewMockRepository(ctrl)
-		service := debt.NewDebtService(repository)
+		debtRepo := mocks.NewMockRepository(ctrl)
+		cliRepo := mocks.NewMockClientReader(ctrl)
+		service := debt.NewDebtService(debtRepo, cliRepo)
 
 		clientId, _ := ulid.Parse("01F8Z5G4J6K7N3J4X2G4J6K7N3")
 		ctx := context.Background()
@@ -169,7 +175,7 @@ func TestDebtServiceTests(t *testing.T) {
 			},
 		}
 
-		repository.EXPECT().ClientUserDebts(ctx, clientId).Return(debts, nil)
+		debtRepo.EXPECT().ClientUserDebts(ctx, clientId).Return(debts, nil)
 		response := service.GetUserDebts(ctx, clientId)
 
 		assert.Equal(t, "success", response.Status)
@@ -187,17 +193,80 @@ func TestDebtServiceTests(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		repository := mocks.NewMockRepository(ctrl)
-		service := debt.NewDebtService(repository)
+		debtRepo := mocks.NewMockRepository(ctrl)
+		cliRepo := mocks.NewMockClientReader(ctrl)
+		service := debt.NewDebtService(debtRepo, cliRepo)
 
 		clientId, _ := ulid.Parse("01F8Z5G4J6K7N3J4X2G4J6K7N3")
 		ctx := context.Background()
 
-		repository.EXPECT().ClientUserDebts(ctx, clientId).Return([]*debt.Debt{}, nil)
+		debtRepo.EXPECT().ClientUserDebts(ctx, clientId).Return([]*debt.Debt{}, nil)
 		response := service.GetUserDebts(ctx, clientId)
 
 		assert.Equal(t, "success", response.Status)
 		assert.Equal(t, "no debts found", response.Message)
 		assert.Nil(t, response.Data)
+	})
+
+	t.Run("Deve retornar a lista de parcelas de um débito", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		debtId, _ := ulid.Parse("01F8Z5G4J6K7N3J4X2G4J6K7N3")
+		clientId, _ := ulid.Parse("01F8Z5G4J6K7N3J4X2G4J6K7N3")
+		debtRepo := mocks.NewMockRepository(ctrl)
+		cliRepo := mocks.NewMockClientReader(ctrl)
+		service := debt.NewDebtService(debtRepo, cliRepo)
+		duedateFirstInstallment, _ := time.Parse(time.DateOnly, "2025-05-25")
+		duedateSecondInstallment, _ := time.Parse(time.DateOnly, "2025-06-25")
+		ctx := context.Background()
+
+		installments := []*debt.Installment{
+			{
+				Id:            ulid.Make(),
+				Description:   "Referente a compra de CD",
+				Value:         600,
+				DueDate:       &duedateFirstInstallment,
+				DebDate:       &duedateFirstInstallment,
+				Status:        debt.Pending,
+				Number:        1,
+				PaymentDate:   nil,
+				PaymentMethod: "Parcelado",
+			},
+			{
+				Id:            ulid.Make(),
+				Description:   "Referente a compra de CD",
+				Value:         600,
+				DueDate:       &duedateSecondInstallment,
+				DebDate:       &duedateSecondInstallment,
+				Status:        debt.Pending,
+				Number:        2,
+				PaymentDate:   nil,
+				PaymentMethod: "Parcelado",
+			},
+		}
+
+		debtRepo.EXPECT().DebtInstallments(gomock.Any(), debtId).Return(installments, nil)
+		cliRepo.EXPECT().ClientExists(gomock.Any(), clientId).Return(true, nil)
+		response := service.GetDebtInstallments(ctx, clientId, debtId)
+		assert.Len(t, response.Data, 2)
+	})
+
+	t.Run("Deve retornar um erro caso o cliente informado não exista", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		debtId, _ := ulid.Parse("01F8Z5G4J6K7N3J4X2G4J6K7N3")
+		clientId, _ := ulid.Parse("01F8Z5G4J6K7N3J4X2G4J6K7N3")
+		ctx := context.Background()
+		debtRepo := mocks.NewMockRepository(ctrl)
+		cliRepo := mocks.NewMockClientReader(ctrl)
+		service := debt.NewDebtService(debtRepo, cliRepo)
+		cliRepo.EXPECT().ClientExists(gomock.Any(), clientId).Return(false, nil)
+		debtRepo.EXPECT().DebtInstallments(gomock.Any(), debtId).Times(0)
+		response := service.GetDebtInstallments(ctx, clientId, debtId)
+
+		assert.Equal(t, "error", response.Status)
+		assert.Equal(t, "client not found", response.Message)
 	})
 }

@@ -5,8 +5,9 @@ import (
 	"net/http"
 	"time"
 
+	cliMemory "github.com/henriquerocha2004/quem-me-deve-api/client/memory"
 	"github.com/henriquerocha2004/quem-me-deve-api/debt"
-	"github.com/henriquerocha2004/quem-me-deve-api/debt/memory"
+	debtMemory "github.com/henriquerocha2004/quem-me-deve-api/debt/memory"
 	"github.com/henriquerocha2004/quem-me-deve-api/internal/container"
 	"github.com/henriquerocha2004/quem-me-deve-api/internal/http/routes"
 )
@@ -34,8 +35,10 @@ func main() {
 func fillDependencies() *container.Dependencies {
 
 	// debt dependencies
-	repository := memory.NewMemoryRepository()
-	service := debt.NewDebtService(repository)
+	debtRepo := debtMemory.NewMemoryRepository()
+	cliRepo := cliMemory.NewClientDebtReader()
+
+	service := debt.NewDebtService(debtRepo, cliRepo)
 
 	return &container.Dependencies{
 		DebtService: service,
