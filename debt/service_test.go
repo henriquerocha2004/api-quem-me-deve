@@ -7,6 +7,7 @@ import (
 
 	"github.com/henriquerocha2004/quem-me-deve-api/debt"
 	"github.com/henriquerocha2004/quem-me-deve-api/debt/mocks"
+	"github.com/henriquerocha2004/quem-me-deve-api/pkg/paginate"
 	"github.com/henriquerocha2004/quem-me-deve-api/pkg/validateErrors"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/assert"
@@ -268,5 +269,58 @@ func TestDebtServiceTests(t *testing.T) {
 
 		assert.Equal(t, "error", response.Status)
 		assert.Equal(t, "client not found", response.Message)
+	})
+
+	t.Run("Deve retornar uma lista de dividas paginada", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		ctx := context.Background()
+		debtRepo := mocks.NewMockRepository(ctrl)
+		cliRepo := mocks.NewMockClientReader(ctrl)
+		service := debt.NewDebtService(debtRepo, cliRepo)
+
+		pgRequest := paginate.PaginateRequest{
+			Page:  1,
+			Limit: 10,
+		}
+
+		pagData := paginate.SearchDto{
+			Limit: pgRequest.Limit,
+		}
+
+		pagData.SetPage(pgRequest.Page)
+
+		dueDate := time.Now().AddDate(0, 0, 1)
+
+		debts := []*debt.Debt{
+			{
+				Description:          "Test Debt",
+				Id:                   ulid.Make(),
+				TotalValue:           1000,
+				DueDate:              &dueDate,
+				Status:               debt.Pending,
+				UserClientId:         ulid.Make(),
+				InstallmentsQuantity: 2,
+				ServiceIds:           []ulid.ULID{ulid.Make()},
+				ProductIds:           []ulid.ULID{ulid.Make()},
+			},
+		}
+
+		paginatedResult := &debt.PaginationResult{
+			Data:         debts,
+			TotalRecords: 1,
+		}
+
+		debtRepo.EXPECT().GetDebts(gomock.Any(), pagData).Return(paginatedResult, nil)
+		response := service.Debts(ctx, pgRequest)
+
+		assert.Equal(t, "success", response.Status)
+		assert.Equal(t, "debts retrieved successfully", response.Message)
+		result := response.Data.(paginate.Result)
+
+		assert.Equal(t, 1, result.TotalRecords)
+		data := result.Data.([]debt.DebtDto)
+		assert.Len(t, data, 1)
 	})
 }

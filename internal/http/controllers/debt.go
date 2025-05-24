@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/henriquerocha2004/quem-me-deve-api/debt"
 	"github.com/henriquerocha2004/quem-me-deve-api/internal/http/customvalidate"
+	"github.com/henriquerocha2004/quem-me-deve-api/pkg/paginate"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -97,6 +98,26 @@ func (c *DebtController) GetDebtInstallments() http.HandlerFunc {
 		}
 
 		result := c.DebtService.GetDebtInstallments(r.Context(), clientIdParsed, debtIdParsed)
+
+		if result.Status == "error" {
+			response(w, http.StatusInternalServerError, result.Message)
+			return
+		}
+
+		response(w, http.StatusOK, result)
+	})
+}
+
+func (c *DebtController) GetDebts() http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		pgRequest, err := paginate.GetPaginateParams(r)
+		if err != nil {
+			log.Println("Error getting pagination params:", err)
+			response(w, http.StatusBadRequest, "Invalid pagination params")
+			return
+		}
+
+		result := c.DebtService.Debts(r.Context(), *pgRequest)
 
 		if result.Status == "error" {
 			response(w, http.StatusInternalServerError, result.Message)

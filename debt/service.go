@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/henriquerocha2004/quem-me-deve-api/pkg/paginate"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -12,6 +13,7 @@ type Service interface {
 	CreateDebt(ctx context.Context, debt *DebtDto) DebtResponse
 	GetUserDebts(ctx context.Context, userId ulid.ULID) DebtResponse
 	GetDebtInstallments(ctx context.Context, clientId, debtId ulid.ULID) DebtResponse
+	Debts(ctx context.Context, params paginate.PaginateRequest) DebtResponse
 }
 
 type debtService struct {
@@ -114,21 +116,7 @@ func (s *debtService) GetUserDebts(ctx context.Context, userId ulid.ULID) DebtRe
 		}
 	}
 
-	var debtsDto []DebtDto
-
-	for _, d := range debts {
-		debtsDto = append(debtsDto, DebtDto{
-			Id:                   d.Id.String(),
-			Description:          d.Description,
-			TotalValue:           d.TotalValue,
-			DueDate:              d.DueDate.Format(time.DateOnly),
-			InstallmentsQuantity: d.InstallmentsQuantity,
-			Status:               d.Status.String(),
-			UserClientId:         d.UserClientId.String(),
-			ProductIds:           s.getProductIds(d.ProductIds),
-			ServiceIds:           s.getServiceIds(d.ServiceIds),
-		})
-	}
+	debtsDto := s.convertToDebtDto(debts)
 
 	return DebtResponse{
 		Status:  "success",
@@ -192,6 +180,39 @@ func (s *debtService) GetDebtInstallments(ctx context.Context, clientId, debtId 
 	}
 }
 
+func (s *debtService) Debts(ctx context.Context, params paginate.PaginateRequest) DebtResponse {
+	pagDto := paginate.SearchDto{
+		Limit:         params.Limit,
+		TermSearch:    params.SearchTerm,
+		SortField:     params.SortField,
+		SortDirection: params.SortDirection,
+	}
+
+	pagDto.SetPage(params.Page)
+	pagDto.AddColumnSearch(params.ColumnSearch)
+
+	result, err := s.debtRepo.GetDebts(ctx, pagDto)
+
+	if err != nil {
+		log.Println("Error retrieving debts:", err)
+		return DebtResponse{
+			Status:  "error",
+			Message: "error retrieving debts",
+		}
+	}
+
+	debtsDto := s.convertToDebtDto(result.Data)
+
+	return DebtResponse{
+		Status:  "success",
+		Message: "debts retrieved successfully",
+		Data: paginate.Result{
+			TotalRecords: result.TotalRecords,
+			Data:         debtsDto,
+		},
+	}
+}
+
 func (s *debtService) putServiceIds(serviceids []string) ([]ulid.ULID, error) {
 
 	if len(serviceids) == 0 {
@@ -252,4 +273,24 @@ func (s *debtService) getServiceIds(serviceIds []ulid.ULID) []string {
 		ids = append(ids, id.String())
 	}
 	return ids
+}
+
+func (s *debtService) convertToDebtDto(debts []*Debt) []DebtDto {
+	var debtsDto []DebtDto
+
+	for _, d := range debts {
+		debtsDto = append(debtsDto, DebtDto{
+			Id:                   d.Id.String(),
+			Description:          d.Description,
+			TotalValue:           d.TotalValue,
+			DueDate:              d.DueDate.Format(time.DateOnly),
+			InstallmentsQuantity: d.InstallmentsQuantity,
+			Status:               d.Status.String(),
+			UserClientId:         d.UserClientId.String(),
+			ProductIds:           s.getProductIds(d.ProductIds),
+			ServiceIds:           s.getServiceIds(d.ServiceIds),
+		})
+	}
+
+	return debtsDto
 }

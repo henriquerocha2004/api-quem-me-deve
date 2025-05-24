@@ -31,3 +31,8 @@ type DebtResponse struct {
 	Message string `json:"message"`
 	Data    any    `json:"data"`
 }
+
+type PaginationResult struct {
+	TotalRecords int     `json:"total_records"`
+	Data         []*Debt `json:"data"`
+}

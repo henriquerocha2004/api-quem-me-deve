@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
@@ -339,5 +340,64 @@ func TestDebtController(t *testing.T) {
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 		assert.Equal(t, "debtId invalid", response)
+	})
+
+	t.Run("Deve retornar os débitos paginados", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		clientId, _ := ulid.Parse("01F8Z5G4J6K7N3J4X2G4J6K7N3")
+		duedate, _ := time.Parse(time.DateOnly, "2023-10-01")
+		now := time.Now()
+		debts := []*debt.Debt{
+			{
+				Description:          "Test Debt",
+				Id:                   ulid.Make(),
+				TotalValue:           1000,
+				DueDate:              &duedate,
+				Status:               debt.Pending,
+				UserClientId:         clientId,
+				InstallmentsQuantity: 2,
+				ServiceIds:           []ulid.ULID{ulid.Make()},
+				ProductIds:           []ulid.ULID{ulid.Make()},
+				DebtDate:             &now,
+			},
+		}
+
+		pgResult := &debt.PaginationResult{
+			TotalRecords: 1,
+			Data:         debts,
+		}
+
+		debtRepository := mocks.NewMockRepository(ctrl)
+		debtRepository.EXPECT().GetDebts(gomock.Any(), gomock.Any()).Return(pgResult, nil)
+		clientRepository := mocks.NewMockClientReader(ctrl)
+
+		service := debt.NewDebtService(debtRepository, clientRepository)
+		controller := controllers.NewDebtController(service)
+
+		r := chi.NewRouter()
+		r.Get("/v1/debt", controller.GetDebts())
+
+		query := url.Values{}
+		query.Add("page", "1")
+		query.Add("limit", "10")
+		query.Add("sort_field", "created_at")
+		query.Add("sort_direction", "desc")
+		query.Add("column_search[0][name]", "description")
+		query.Add("column_search[0][value]", "Test Debt")
+
+		uri := "/v1/debt?" + query.Encode()
+
+		req := httptest.NewRequest(http.MethodGet, uri, nil)
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		var response debt.DebtResponse
+		err := json.NewDecoder(w.Body).Decode(&response)
+		assert.Nil(t, err)
+
+		assert.Len(t, response.Data, 2)
 	})
 }

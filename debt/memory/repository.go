@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/henriquerocha2004/quem-me-deve-api/debt"
+	"github.com/henriquerocha2004/quem-me-deve-api/pkg/paginate"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -50,4 +51,16 @@ func (m *DebtMemoryRepository) DebtInstallments(ctx context.Context, debtId ulid
 	}
 
 	return installments, nil
+}
+
+func (m *DebtMemoryRepository) GetDebts(ctx context.Context, pagData paginate.SearchDto) (*debt.PaginationResult, error) {
+	var debts []*debt.Debt
+	for _, debt := range m.Debts {
+		debts = append(debts, &debt)
+	}
+
+	return &debt.PaginationResult{
+		TotalRecords: len(m.Debts),
+		Data:         debts,
+	}, nil
 }

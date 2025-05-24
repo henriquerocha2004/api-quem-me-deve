@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	debt "github.com/henriquerocha2004/quem-me-deve-api/debt"
+	paginate "github.com/henriquerocha2004/quem-me-deve-api/pkg/paginate"
 	ulid "github.com/oklog/ulid/v2"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -70,6 +71,21 @@ func (m *MockReader) DebtInstallments(ctx context.Context, debtId ulid.ULID) ([]
 func (mr *MockReaderMockRecorder) DebtInstallments(ctx, debtId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DebtInstallments", reflect.TypeOf((*MockReader)(nil).DebtInstallments), ctx, debtId)
+}
+
+// GetDebts mocks base method.
+func (m *MockReader) GetDebts(ctx context.Context, pagData paginate.SearchDto) (*debt.PaginationResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDebts", ctx, pagData)
+	ret0, _ := ret[0].(*debt.PaginationResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDebts indicates an expected call of GetDebts.
+func (mr *MockReaderMockRecorder) GetDebts(ctx, pagData any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDebts", reflect.TypeOf((*MockReader)(nil).GetDebts), ctx, pagData)
 }
 
 // MockWriter is a mock of Writer interface.
@@ -162,6 +178,21 @@ func (m *MockRepository) DebtInstallments(ctx context.Context, debtId ulid.ULID)
 func (mr *MockRepositoryMockRecorder) DebtInstallments(ctx, debtId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DebtInstallments", reflect.TypeOf((*MockRepository)(nil).DebtInstallments), ctx, debtId)
+}
+
+// GetDebts mocks base method.
+func (m *MockRepository) GetDebts(ctx context.Context, pagData paginate.SearchDto) (*debt.PaginationResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDebts", ctx, pagData)
+	ret0, _ := ret[0].(*debt.PaginationResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDebts indicates an expected call of GetDebts.
+func (mr *MockRepositoryMockRecorder) GetDebts(ctx, pagData any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDebts", reflect.TypeOf((*MockRepository)(nil).GetDebts), ctx, pagData)
 }
 
 // Save mocks base method.
