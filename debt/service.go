@@ -14,6 +14,7 @@ type Service interface {
 	GetUserDebts(ctx context.Context, userId ulid.ULID) DebtResponse
 	GetDebtInstallments(ctx context.Context, clientId, debtId ulid.ULID) DebtResponse
 	Debts(ctx context.Context, params paginate.PaginateRequest) DebtResponse
+	PayInstallment(ctx context.Context, pgInfo *PaymentInfoDto) DebtResponse
 }
 
 type debtService struct {
@@ -210,6 +211,56 @@ func (s *debtService) Debts(ctx context.Context, params paginate.PaginateRequest
 			TotalRecords: result.TotalRecords,
 			Data:         debtsDto,
 		},
+	}
+}
+
+func (s *debtService) PayInstallment(ctx context.Context, pgInfo *PaymentInfoDto) DebtResponse {
+	debtId, err := ulid.Parse(pgInfo.DebtId)
+	if err != nil {
+		log.Println("Error parsing debt ID:", err)
+		return DebtResponse{
+			Status:  "error",
+			Message: "invalid debt ID",
+		}
+	}
+
+	debt, err := s.debtRepo.GetDebt(ctx, debtId)
+	if err != nil {
+		log.Println("Error retrieving debt:", err)
+		return DebtResponse{
+			Status:  "error",
+			Message: "error retrieving debt",
+		}
+	}
+
+	if debt == nil {
+		return DebtResponse{
+			Status:  "error",
+			Message: "debt not found",
+		}
+	}
+
+	err = debt.PayInstallment(pgInfo)
+	if err != nil {
+		log.Println("Error paying installment:", err)
+		return DebtResponse{
+			Status:  "error",
+			Message: err.Error(),
+		}
+	}
+
+	err = s.debtRepo.Update(ctx, debt)
+	if err != nil {
+		log.Println("Error updating debt:", err)
+		return DebtResponse{
+			Status:  "error",
+			Message: "error updating debt",
+		}
+	}
+
+	return DebtResponse{
+		Status:  "success",
+		Message: "installment paid successfully",
 	}
 }
 

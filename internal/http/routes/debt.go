@@ -12,6 +12,7 @@ func DebtRoutes(d *container.Dependencies) http.Handler {
 	r := chi.NewRouter()
 	debtController := controllers.NewDebtController(d.DebtService)
 	r.Post("/", debtController.CreateDebt())
+	r.Post("/pay-installment", debtController.PayInstallment())
 	r.Get("/", debtController.GetDebts())
 	r.Get("/{clientId}", debtController.GetClientUserDebts())
 	r.Get("/{clientId}/{debtId}/installments", debtController.GetDebtInstallments())

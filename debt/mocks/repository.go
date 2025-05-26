@@ -73,6 +73,21 @@ func (mr *MockReaderMockRecorder) DebtInstallments(ctx, debtId any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DebtInstallments", reflect.TypeOf((*MockReader)(nil).DebtInstallments), ctx, debtId)
 }
 
+// GetDebt mocks base method.
+func (m *MockReader) GetDebt(ctx context.Context, debtId ulid.ULID) (*debt.Debt, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDebt", ctx, debtId)
+	ret0, _ := ret[0].(*debt.Debt)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDebt indicates an expected call of GetDebt.
+func (mr *MockReaderMockRecorder) GetDebt(ctx, debtId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDebt", reflect.TypeOf((*MockReader)(nil).GetDebt), ctx, debtId)
+}
+
 // GetDebts mocks base method.
 func (m *MockReader) GetDebts(ctx context.Context, pagData paginate.SearchDto) (*debt.PaginationResult, error) {
 	m.ctrl.T.Helper()
@@ -124,6 +139,20 @@ func (m *MockWriter) Save(ctx context.Context, arg1 *debt.Debt) error {
 func (mr *MockWriterMockRecorder) Save(ctx, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockWriter)(nil).Save), ctx, arg1)
+}
+
+// Update mocks base method.
+func (m *MockWriter) Update(ctx context.Context, arg1 *debt.Debt) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", ctx, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Update indicates an expected call of Update.
+func (mr *MockWriterMockRecorder) Update(ctx, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockWriter)(nil).Update), ctx, arg1)
 }
 
 // MockRepository is a mock of Repository interface.
@@ -180,6 +209,21 @@ func (mr *MockRepositoryMockRecorder) DebtInstallments(ctx, debtId any) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DebtInstallments", reflect.TypeOf((*MockRepository)(nil).DebtInstallments), ctx, debtId)
 }
 
+// GetDebt mocks base method.
+func (m *MockRepository) GetDebt(ctx context.Context, debtId ulid.ULID) (*debt.Debt, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDebt", ctx, debtId)
+	ret0, _ := ret[0].(*debt.Debt)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDebt indicates an expected call of GetDebt.
+func (mr *MockRepositoryMockRecorder) GetDebt(ctx, debtId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDebt", reflect.TypeOf((*MockRepository)(nil).GetDebt), ctx, debtId)
+}
+
 // GetDebts mocks base method.
 func (m *MockRepository) GetDebts(ctx context.Context, pagData paginate.SearchDto) (*debt.PaginationResult, error) {
 	m.ctrl.T.Helper()
@@ -207,6 +251,20 @@ func (m *MockRepository) Save(ctx context.Context, arg1 *debt.Debt) error {
 func (mr *MockRepositoryMockRecorder) Save(ctx, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockRepository)(nil).Save), ctx, arg1)
+}
+
+// Update mocks base method.
+func (m *MockRepository) Update(ctx context.Context, arg1 *debt.Debt) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", ctx, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Update indicates an expected call of Update.
+func (mr *MockRepositoryMockRecorder) Update(ctx, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockRepository)(nil).Update), ctx, arg1)
 }
 
 // MockClientReader is a mock of ClientReader interface.

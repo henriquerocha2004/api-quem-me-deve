@@ -11,10 +11,12 @@ type Reader interface {
 	ClientUserDebts(ctx context.Context, clientUserId ulid.ULID) ([]*Debt, error)
 	DebtInstallments(ctx context.Context, debtId ulid.ULID) ([]*Installment, error)
 	GetDebts(ctx context.Context, pagData paginate.SearchDto) (*PaginationResult, error)
+	GetDebt(ctx context.Context, debtId ulid.ULID) (*Debt, error)
 }
 
 type Writer interface {
 	Save(ctx context.Context, debt *Debt) error
+	Update(ctx context.Context, debt *Debt) error
 }
 
 type Repository interface {

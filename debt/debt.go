@@ -32,6 +32,7 @@ type Debt struct {
 	ProductIds           []ulid.ULID
 	ServiceIds           []ulid.ULID
 	Intallments          []Installment
+	FinishedAt           *time.Time
 }
 
 func (d *Debt) Validate() validateErrors.ValidationErrors {
@@ -111,7 +112,7 @@ func (d *Debt) ValidateClientId() error {
 
 func (d *Debt) GenerateInstallments() error {
 	if d.InstallmentsQuantity <= 0 {
-		return nil
+		d.InstallmentsQuantity = 1
 	}
 
 	now := time.Now()
@@ -148,4 +149,64 @@ func (d *Debt) GenerateInstallments() error {
 	}
 
 	return nil
+}
+
+func (d *Debt) PayInstallment(payInfo *PaymentInfoDto) error {
+	now := time.Now()
+
+	if d.Status != Pending {
+		return errors.New("debt is not in pending status")
+	}
+
+	installmentExists := false
+
+	for i, installment := range d.Intallments {
+		if installment.Id.String() != payInfo.InstallmentId {
+			continue
+		}
+
+		installmentExists = true
+
+		if installment.Status != Pending {
+			return errors.New("installment is not in pending status")
+		}
+
+		if payInfo.Amount < installment.Value {
+			return errors.New("amount does not match the installment value")
+		}
+
+		installment.Status = Paid
+		installment.PaymentDate = &now
+		installment.PaymentMethod = payInfo.PaymentMethod
+
+		d.Intallments[i] = installment
+		break
+	}
+
+	if !installmentExists {
+		return errors.New("installment not found")
+	}
+
+	d.updateDebtStatus()
+
+	return nil
+}
+
+func (d *Debt) updateDebtStatus() {
+	allPaid := true
+
+	for _, installment := range d.Intallments {
+		if installment.Status != Paid {
+			allPaid = false
+			break
+		}
+	}
+
+	if !allPaid {
+		return
+	}
+
+	now := time.Now()
+	d.Status = Paid
+	d.FinishedAt = &now
 }

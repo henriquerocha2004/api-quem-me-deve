@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-playground/validator"
 	"github.com/henriquerocha2004/quem-me-deve-api/pkg/validateErrors"
+	"github.com/oklog/ulid"
 )
 
 var v *validator.Validate
@@ -17,6 +18,7 @@ func init() {
 	v = validator.New()
 	_ = v.RegisterValidation("dateFormat:YYYY-MM-DD", dateValidate)
 	_ = v.RegisterValidation("dateTimeFormat:YYYY-MM-DDTHH:MM:SS", dateTimeValidate)
+	_ = v.RegisterValidation("ulid", ulidValidate)
 }
 
 func Validate(data any) *ValidationResponse {
@@ -52,6 +54,8 @@ func getErrorMessage(e validator.FieldError) string {
 		return "Invalid date format, expected YYYY-MM-DD"
 	case "dateTimeFormat:YYYY-MM-DDTHH:MM:SS":
 		return "Invalid date time format, expected YYYY-MM-DDTHH:MM:SS"
+	case "ulid":
+		return "Invalid ULID format"
 	default:
 		return "Invalid value"
 	}
@@ -66,5 +70,11 @@ func dateValidate(field validator.FieldLevel) bool {
 func dateTimeValidate(field validator.FieldLevel) bool {
 	date := field.Field().String()
 	_, err := time.Parse(time.DateTime, date)
+	return err == nil
+}
+
+func ulidValidate(field validator.FieldLevel) bool {
+	ulidStr := field.Field().String()
+	_, err := ulid.Parse(ulidStr)
 	return err == nil
 }

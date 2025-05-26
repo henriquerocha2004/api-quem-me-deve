@@ -64,3 +64,22 @@ func (m *DebtMemoryRepository) GetDebts(ctx context.Context, pagData paginate.Se
 		Data:         debts,
 	}, nil
 }
+
+func (m *DebtMemoryRepository) Update(ctx context.Context, debt *debt.Debt) error {
+	for i, d := range m.Debts {
+		if d.Id == debt.Id {
+			m.Debts[i] = *debt
+			return nil
+		}
+	}
+	return nil
+}
+
+func (m *DebtMemoryRepository) GetDebt(ctx context.Context, debtId ulid.ULID) (*debt.Debt, error) {
+	for _, d := range m.Debts {
+		if d.Id == debtId {
+			return &d, nil
+		}
+	}
+	return nil, nil
+}

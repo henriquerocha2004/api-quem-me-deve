@@ -196,4 +196,212 @@ func TestDebtTests(t *testing.T) {
 
 		assert.Equal(t, d.TotalValue, value)
 	})
+
+	t.Run("Deve realizar o pagamento de uma parcela", func(t *testing.T) {
+		now := time.Now()
+		dueDate := now.Add(24 * time.Hour)
+
+		// Arrange
+		d := &debt.Debt{
+			Id:                   ulid.Make(),
+			Description:          "Test Debt",
+			TotalValue:           1000,
+			DueDate:              &dueDate,
+			InstallmentsQuantity: 2,
+			DebtDate:             nil,
+			Status:               debt.Pending,
+			UserClientId:         ulid.Make(),
+			ProductIds:           []ulid.ULID{ulid.Make()},
+			ServiceIds:           []ulid.ULID{},
+			Intallments:          []debt.Installment{},
+		}
+
+		d.GenerateInstallments()
+
+		installmentId := d.Intallments[0].Id.String()
+
+		paymentInfo := &debt.PaymentInfoDto{
+			DebtId:        d.Id.String(),
+			InstallmentId: installmentId,
+			Amount:        500,
+			PaymentMethod: "credit_card",
+		}
+
+		err := d.PayInstallment(paymentInfo)
+		assert.Nil(t, err)
+		assert.Equal(t, debt.Paid, d.Intallments[0].Status)
+		assert.NotNil(t, d.Intallments[0].PaymentDate)
+		assert.Equal(t, paymentInfo.PaymentMethod, d.Intallments[0].PaymentMethod)
+	})
+
+	t.Run("Deve retornar erro ao tentar pagar uma parcela de uma divida que nao esta pendente", func(t *testing.T) {
+		now := time.Now()
+		dueDate := now.Add(24 * time.Hour)
+
+		// Arrange
+		d := &debt.Debt{
+			Id:                   ulid.Make(),
+			Description:          "Test Debt",
+			TotalValue:           1000,
+			DueDate:              &dueDate,
+			InstallmentsQuantity: 2,
+			DebtDate:             nil,
+			Status:               debt.Paid,
+			UserClientId:         ulid.Make(),
+			ProductIds:           []ulid.ULID{ulid.Make()},
+			ServiceIds:           []ulid.ULID{},
+			Intallments:          []debt.Installment{},
+		}
+
+		d.GenerateInstallments()
+
+		installmentId := d.Intallments[0].Id.String()
+
+		paymentInfo := &debt.PaymentInfoDto{
+			DebtId:        d.Id.String(),
+			InstallmentId: installmentId,
+			Amount:        500,
+			PaymentMethod: "credit_card",
+		}
+
+		err := d.PayInstallment(paymentInfo)
+		assert.NotNil(t, err)
+		assert.Equal(t, "debt is not in pending status", err.Error())
+	})
+
+	t.Run("Deve retornar erro ao tentar pagar uma parcela que nao existe", func(t *testing.T) {
+		now := time.Now()
+		dueDate := now.Add(24 * time.Hour)
+
+		// Arrange
+		d := &debt.Debt{
+			Id:                   ulid.Make(),
+			Description:          "Test Debt",
+			TotalValue:           1000,
+			DueDate:              &dueDate,
+			InstallmentsQuantity: 2,
+			DebtDate:             nil,
+			Status:               debt.Pending,
+			UserClientId:         ulid.Make(),
+			ProductIds:           []ulid.ULID{ulid.Make()},
+			ServiceIds:           []ulid.ULID{},
+			Intallments:          []debt.Installment{},
+		}
+
+		d.GenerateInstallments()
+
+		paymentInfo := &debt.PaymentInfoDto{
+			DebtId:        d.Id.String(),
+			InstallmentId: ulid.Make().String(),
+			Amount:        500,
+			PaymentMethod: "credit_card",
+		}
+
+		err := d.PayInstallment(paymentInfo)
+		assert.NotNil(t, err)
+		assert.Equal(t, "installment not found", err.Error())
+	})
+
+	t.Run("Deve retornar erro ao tentar pagar uma parcela que nao esta pendente", func(t *testing.T) {
+		now := time.Now()
+		dueDate := now.Add(24 * time.Hour)
+
+		d := &debt.Debt{
+			Id:                   ulid.Make(),
+			Description:          "Test Debt",
+			TotalValue:           1000,
+			DueDate:              &dueDate,
+			InstallmentsQuantity: 2,
+			DebtDate:             nil,
+			Status:               debt.Pending,
+			UserClientId:         ulid.Make(),
+			ProductIds:           []ulid.ULID{ulid.Make()},
+			ServiceIds:           []ulid.ULID{},
+			Intallments:          []debt.Installment{},
+		}
+
+		d.GenerateInstallments()
+
+		d.Intallments[0].Status = debt.Paid
+		d.Intallments[0].PaymentDate = &now
+		d.Intallments[0].PaymentMethod = "credit_card"
+
+		paymentInfo := &debt.PaymentInfoDto{
+			DebtId:        d.Id.String(),
+			InstallmentId: d.Intallments[0].Id.String(),
+			Amount:        500,
+			PaymentMethod: "credit_card",
+		}
+
+		err := d.PayInstallment(paymentInfo)
+		assert.NotNil(t, err)
+		assert.Equal(t, "installment is not in pending status", err.Error())
+	})
+
+	t.Run("Deve retornar erro ao tentar pagar uma parcela com valor diferente do valor da parcela", func(t *testing.T) {
+		now := time.Now()
+		dueDate := now.Add(24 * time.Hour)
+
+		d := &debt.Debt{
+			Id:                   ulid.Make(),
+			Description:          "Test Debt",
+			TotalValue:           1000,
+			DueDate:              &dueDate,
+			InstallmentsQuantity: 2,
+			DebtDate:             nil,
+			Status:               debt.Pending,
+			UserClientId:         ulid.Make(),
+			ProductIds:           []ulid.ULID{ulid.Make()},
+			ServiceIds:           []ulid.ULID{},
+			Intallments:          []debt.Installment{},
+		}
+
+		d.GenerateInstallments()
+
+		paymentInfo := &debt.PaymentInfoDto{
+			DebtId:        d.Id.String(),
+			InstallmentId: d.Intallments[0].Id.String(),
+			Amount:        400,
+			PaymentMethod: "credit_card",
+		}
+
+		err := d.PayInstallment(paymentInfo)
+		assert.NotNil(t, err)
+		assert.Equal(t, "amount does not match the installment value", err.Error())
+	})
+
+	t.Run("Deve finalizar a divida quando todas as parcelas forem pagas", func(t *testing.T) {
+		now := time.Now()
+		dueDate := now.Add(24 * time.Hour)
+
+		d := &debt.Debt{
+			Id:                   ulid.Make(),
+			Description:          "Test Debt",
+			TotalValue:           1000,
+			DueDate:              &dueDate,
+			InstallmentsQuantity: 2,
+			DebtDate:             nil,
+			Status:               debt.Pending,
+			UserClientId:         ulid.Make(),
+			ProductIds:           []ulid.ULID{ulid.Make()},
+			ServiceIds:           []ulid.ULID{},
+			Intallments:          []debt.Installment{},
+		}
+
+		d.GenerateInstallments()
+
+		for i := range d.Intallments {
+			paymentInfo := &debt.PaymentInfoDto{
+				DebtId:        d.Id.String(),
+				InstallmentId: d.Intallments[i].Id.String(),
+				Amount:        d.Intallments[i].Value,
+				PaymentMethod: "credit_card",
+			}
+
+			err := d.PayInstallment(paymentInfo)
+			assert.Nil(t, err)
+		}
+
+		assert.Equal(t, debt.Paid, d.Status)
+	})
 }

@@ -127,3 +127,27 @@ func (c *DebtController) GetDebts() http.HandlerFunc {
 		response(w, http.StatusOK, result)
 	})
 }
+
+func (c *DebtController) PayInstallment() http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var paymentInfo debt.PaymentInfoDto
+		if err := json.NewDecoder(r.Body).Decode(&paymentInfo); err != nil {
+			response(w, http.StatusBadRequest, "Invalid request")
+			return
+		}
+
+		v := customvalidate.Validate(paymentInfo)
+		if len(v.Errors) > 0 {
+			response(w, http.StatusUnprocessableEntity, v)
+			return
+		}
+
+		output := c.DebtService.PayInstallment(r.Context(), &paymentInfo)
+		if output.Status == "error" {
+			response(w, http.StatusInternalServerError, output.Message)
+			return
+		}
+
+		response(w, http.StatusOK, output)
+	})
+}

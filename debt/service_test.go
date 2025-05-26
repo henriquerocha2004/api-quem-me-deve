@@ -323,4 +323,90 @@ func TestDebtServiceTests(t *testing.T) {
 		data := result.Data.([]debt.DebtDto)
 		assert.Len(t, data, 1)
 	})
+
+	t.Run("Deve realizar o pagamento de uma parcela", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		ctx := context.Background()
+		debtRepo := mocks.NewMockRepository(ctrl)
+		cliRepo := mocks.NewMockClientReader(ctrl)
+		service := debt.NewDebtService(debtRepo, cliRepo)
+
+		d := &debt.Debt{
+			Id:                   ulid.Make(),
+			UserClientId:         ulid.Make(),
+			Status:               debt.Pending,
+			DueDate:              nil,
+			ProductIds:           []ulid.ULID{},
+			ServiceIds:           []ulid.ULID{},
+			InstallmentsQuantity: 1,
+		}
+
+		d.GenerateInstallments()
+
+		paymentInfo := &debt.PaymentInfoDto{
+			DebtId:        d.Id.String(),
+			InstallmentId: d.Intallments[0].Id.String(),
+			Amount:        500,
+			PaymentMethod: "Credit Card",
+		}
+
+		debtId, _ := ulid.Parse(paymentInfo.DebtId)
+		debtRepo.EXPECT().GetDebt(gomock.Any(), debtId).Return(d, nil)
+
+		debtRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
+
+		response := service.PayInstallment(ctx, paymentInfo)
+
+		assert.Equal(t, "success", response.Status)
+		assert.Equal(t, "installment paid successfully", response.Message)
+	})
+
+	t.Run("Deve retornar um erro caso seja informado um debtoId inválido", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		ctx := context.Background()
+		debtRepo := mocks.NewMockRepository(ctrl)
+		cliRepo := mocks.NewMockClientReader(ctrl)
+		service := debt.NewDebtService(debtRepo, cliRepo)
+
+		paymentInfo := &debt.PaymentInfoDto{
+			DebtId:        "invalid-debt-id",
+			InstallmentId: "01F8Z5G4J6K7N3J4X2G4J6K7N3",
+			Amount:        500,
+			PaymentMethod: "Credit Card",
+		}
+
+		response := service.PayInstallment(ctx, paymentInfo)
+
+		assert.Equal(t, "error", response.Status)
+		assert.Equal(t, "invalid debt ID", response.Message)
+	})
+
+	t.Run("Deve retornar um erro caso o debito não seja encontrado", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		ctx := context.Background()
+		debtRepo := mocks.NewMockRepository(ctrl)
+		cliRepo := mocks.NewMockClientReader(ctrl)
+		service := debt.NewDebtService(debtRepo, cliRepo)
+
+		paymentInfo := &debt.PaymentInfoDto{
+			DebtId:        "01F8Z5G4J6K7N3J4X2G4J6K7N3",
+			InstallmentId: "01F8Z5G4J6K7N3J4X2G4J6K7N3",
+			Amount:        500,
+			PaymentMethod: "Credit Card",
+		}
+
+		debtId, _ := ulid.Parse(paymentInfo.DebtId)
+		debtRepo.EXPECT().GetDebt(gomock.Any(), debtId).Return(nil, nil)
+
+		response := service.PayInstallment(ctx, paymentInfo)
+
+		assert.Equal(t, "error", response.Status)
+		assert.Equal(t, "debt not found", response.Message)
+	})
 }

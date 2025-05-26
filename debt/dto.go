@@ -36,3 +36,10 @@ type PaginationResult struct {
 	TotalRecords int     `json:"total_records"`
 	Data         []*Debt `json:"data"`
 }
+
+type PaymentInfoDto struct {
+	DebtId        string  `json:"debt_id" validate:"required,ulid"`
+	InstallmentId string  `json:"installment_id" validate:"required,ulid"`
+	Amount        float64 `json:"amount" validate:"required,gt=0"`
+	PaymentMethod string  `json:"payment_method" validate:"required"`
+}

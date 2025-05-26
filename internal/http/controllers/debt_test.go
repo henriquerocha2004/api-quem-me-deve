@@ -15,6 +15,7 @@ import (
 	debtMemory "github.com/henriquerocha2004/quem-me-deve-api/debt/memory"
 	"github.com/henriquerocha2004/quem-me-deve-api/debt/mocks"
 	"github.com/henriquerocha2004/quem-me-deve-api/internal/http/controllers"
+	"github.com/henriquerocha2004/quem-me-deve-api/internal/http/customvalidate"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -399,5 +400,126 @@ func TestDebtController(t *testing.T) {
 		assert.Nil(t, err)
 
 		assert.Len(t, response.Data, 2)
+	})
+
+	t.Run("Deve realizar o pagamento de uma parcela", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		clientId, _ := ulid.Parse("01F8Z5G4J6K7N3J4X2G4J6K7N3")
+		debtId, _ := ulid.Parse("01F8Z5G4J6K7N3J4X2G4J6K7N3")
+		installmentId, _ := ulid.Parse("01F8Z5G4J6K7N3J4X2G4J6K7N3")
+
+		paymentInfo := &debt.PaymentInfoDto{
+			DebtId:        debtId.String(),
+			InstallmentId: installmentId.String(),
+			Amount:        500,
+			PaymentMethod: "Credit Card",
+		}
+
+		d := &debt.Debt{
+			Id:                   debtId,
+			UserClientId:         clientId,
+			InstallmentsQuantity: 2,
+			Intallments: []debt.Installment{
+				{
+					Id:            installmentId,
+					Description:   "Test Installment",
+					Value:         500,
+					DueDate:       nil,
+					DebDate:       nil,
+					Status:        debt.Pending,
+					PaymentDate:   nil,
+					PaymentMethod: "",
+					Number:        1,
+				},
+				{
+					Id:            ulid.Make(),
+					Description:   "Test Installment 2",
+					Value:         500,
+					DueDate:       nil,
+					DebDate:       nil,
+					Status:        debt.Pending,
+					PaymentDate:   nil,
+					PaymentMethod: "",
+					Number:        2,
+				},
+			},
+			Status: debt.Pending,
+		}
+
+		debtRepository := mocks.NewMockRepository(ctrl)
+		debtRepository.EXPECT().GetDebt(gomock.Any(), debtId).Return(d, nil)
+		debtRepository.EXPECT().Update(gomock.Any(), d).Return(nil)
+		clientRepository := mocks.NewMockClientReader(ctrl)
+
+		service := debt.NewDebtService(debtRepository, clientRepository)
+		controller := controllers.NewDebtController(service)
+
+		r := chi.NewRouter()
+		r.Post("/v1/debt/pay-installment", controller.PayInstallment())
+
+		jsonBody, err := json.Marshal(paymentInfo)
+		assert.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, "/v1/debt/pay-installment", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		var response debt.DebtResponse
+		err = json.NewDecoder(w.Body).Decode(&response)
+		assert.Nil(t, err)
+
+		assert.Equal(t, "success", response.Status)
+		assert.Equal(t, "i nstallment paid successfully", response.Message)
+	})
+
+	t.Run("Deve retornar um erro ao tentar pagar uma parcela com dados inválidos", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		debtRepository := mocks.NewMockRepository(ctrl)
+		clientRepository := mocks.NewMockClientReader(ctrl)
+
+		debtRepository.EXPECT().GetDebt(gomock.Any(), gomock.Any()).Times(0)
+		debtRepository.EXPECT().Update(gomock.Any(), gomock.Any()).Times(0)
+		clientRepository.EXPECT().ClientExists(gomock.Any(), gomock.Any()).Times(0)
+
+		service := debt.NewDebtService(debtRepository, clientRepository)
+		controller := controllers.NewDebtController(service)
+
+		r := chi.NewRouter()
+		r.Post("/v1/debt/pay-installment", controller.PayInstallment())
+
+		paymentInfo := &debt.PaymentInfoDto{
+			DebtId:        "invalidDebtId",
+			InstallmentId: "invalidInstallmentId",
+			Amount:        0,
+			PaymentMethod: "",
+		}
+
+		jsonBody, err := json.Marshal(paymentInfo)
+		assert.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, "/v1/debt/pay-installment", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		var response customvalidate.ValidationResponse
+		err = json.NewDecoder(w.Body).Decode(&response)
+		assert.Nil(t, err)
+
+		assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
+		assert.Equal(t, 4, len(response.Errors))
+		assert.Equal(t, "DebtId", response.Errors[0].Field)
+		assert.Equal(t, "Invalid ULID format", response.Errors[0].Message)
+		assert.Equal(t, "InstallmentId", response.Errors[1].Field)
+		assert.Equal(t, "Invalid ULID format", response.Errors[1].Message)
+		assert.Equal(t, "Amount", response.Errors[2].Field)
+		assert.Equal(t, "This field is required", response.Errors[2].Message)
+		assert.Equal(t, "PaymentMethod", response.Errors[3].Field)
+		assert.Equal(t, "This field is required", response.Errors[3].Message)
 	})
 }
