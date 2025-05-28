@@ -20,6 +20,20 @@ type Installment struct {
 	Number        int
 }
 
+type CancelInfo struct {
+	Reason      string
+	CancelDate  *time.Time
+	CancelledBy ulid.ULID
+}
+
+type ReversalInfo struct {
+	Reason                  string
+	ReversalDate            *time.Time
+	ReversedBy              ulid.ULID
+	ReversedInstallmentQtd  int
+	CancelledInstallmentQtd int
+}
+
 type Debt struct {
 	Id                   ulid.ULID
 	Description          string
@@ -32,6 +46,8 @@ type Debt struct {
 	ProductIds           []ulid.ULID
 	ServiceIds           []ulid.ULID
 	Intallments          []Installment
+	CancelInfo           *CancelInfo
+	ReversalInfo         *ReversalInfo
 	FinishedAt           *time.Time
 }
 
@@ -192,6 +208,70 @@ func (d *Debt) PayInstallment(payInfo *PaymentInfoDto) error {
 	return nil
 }
 
+func (d *Debt) Cancel(cancelInfo *CancelInfoDto) error {
+	if d.Status != Pending {
+		return errors.New("debt is not in pending status")
+	}
+
+	if d.hasInstallmentPaid() {
+		return errors.New("cannot cancel debt with paid installments")
+	}
+
+	now := time.Now()
+
+	d.Status = Canceled
+	d.FinishedAt = &now
+	d.CancelInfo = &CancelInfo{
+		Reason:      cancelInfo.Reason,
+		CancelDate:  &now,
+		CancelledBy: cancelInfo.CancelledBy,
+	}
+
+	for i := range d.Intallments {
+		d.Intallments[i].Status = Canceled
+	}
+
+	return nil
+}
+
+func (d *Debt) Reverse(reversalInfo *ReversalInfoDto) error {
+	if d.Status == Canceled || d.Status == Reversed {
+		return errors.New("debt is already canceled or reversed")
+	}
+
+	if d.ReversalInfo != nil {
+		return errors.New("debt has already been reversed")
+	}
+
+	now := time.Now()
+
+	d.Status = Reversed
+	d.FinishedAt = &now
+	qtdInstallmentsReversed := 0
+	qtdInstallmentsCanceled := 0
+
+	for i := range d.Intallments {
+		if d.Intallments[i].Status == Paid {
+			d.Intallments[i].Status = Reversed
+			qtdInstallmentsReversed++
+			continue
+		}
+
+		d.Intallments[i].Status = Canceled
+		qtdInstallmentsCanceled++
+	}
+
+	d.ReversalInfo = &ReversalInfo{
+		Reason:                  reversalInfo.Reason,
+		ReversalDate:            &now,
+		ReversedBy:              reversalInfo.ReversedBy,
+		ReversedInstallmentQtd:  qtdInstallmentsReversed,
+		CancelledInstallmentQtd: qtdInstallmentsCanceled,
+	}
+
+	return nil
+}
+
 func (d *Debt) updateDebtStatus() {
 	allPaid := true
 
@@ -209,4 +289,13 @@ func (d *Debt) updateDebtStatus() {
 	now := time.Now()
 	d.Status = Paid
 	d.FinishedAt = &now
+}
+
+func (d *Debt) hasInstallmentPaid() bool {
+	for _, installment := range d.Intallments {
+		if installment.Status == Paid {
+			return true
+		}
+	}
+	return false
 }

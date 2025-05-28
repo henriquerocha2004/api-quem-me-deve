@@ -404,4 +404,99 @@ func TestDebtTests(t *testing.T) {
 
 		assert.Equal(t, debt.Paid, d.Status)
 	})
+
+	t.Run("Deve cancelar a divida", func(t *testing.T) {
+		now := time.Now()
+		dueDate := now.Add(24 * time.Hour)
+
+		d := &debt.Debt{
+			Id:                   ulid.Make(),
+			Description:          "Test Debt",
+			TotalValue:           1000,
+			DueDate:              &dueDate,
+			InstallmentsQuantity: 2,
+			DebtDate:             nil,
+			Status:               debt.Pending,
+			UserClientId:         ulid.Make(),
+			ProductIds:           []ulid.ULID{ulid.Make()},
+			ServiceIds:           []ulid.ULID{},
+			Intallments:          []debt.Installment{},
+		}
+
+		d.GenerateInstallments()
+
+		cancelInfo := &debt.CancelInfoDto{
+			DebtId:      d.Id.String(),
+			Reason:      "User requested cancellation",
+			CancelledBy: ulid.Make(),
+		}
+
+		err := d.Cancel(cancelInfo)
+		assert.Nil(t, err)
+		assert.Equal(t, debt.Canceled, d.Status)
+	})
+
+	t.Run("Deve retornar erro ao tentar cancelar uma divida que nao esta pendente", func(t *testing.T) {
+		now := time.Now()
+		dueDate := now.Add(24 * time.Hour)
+
+		d := &debt.Debt{
+			Id:                   ulid.Make(),
+			Description:          "Test Debt",
+			TotalValue:           1000,
+			DueDate:              &dueDate,
+			InstallmentsQuantity: 2,
+			DebtDate:             nil,
+			Status:               debt.Paid,
+			UserClientId:         ulid.Make(),
+			ProductIds:           []ulid.ULID{ulid.Make()},
+			ServiceIds:           []ulid.ULID{},
+			Intallments:          []debt.Installment{},
+		}
+
+		cancelInfo := &debt.CancelInfoDto{
+			DebtId:      d.Id.String(),
+			Reason:      "User requested cancellation",
+			CancelledBy: ulid.Make(),
+		}
+
+		err := d.Cancel(cancelInfo)
+		assert.NotNil(t, err)
+		assert.Equal(t, "debt is not in pending status", err.Error())
+	})
+
+	t.Run("Deve retornar erro ao tentar cancelar uma divida com parcelas pagas", func(t *testing.T) {
+		now := time.Now()
+		dueDate := now.Add(24 * time.Hour)
+
+		d := &debt.Debt{
+			Id:                   ulid.Make(),
+			Description:          "Test Debt",
+			TotalValue:           1000,
+			DueDate:              &dueDate,
+			InstallmentsQuantity: 2,
+			DebtDate:             nil,
+			Status:               debt.Pending,
+			UserClientId:         ulid.Make(),
+			ProductIds:           []ulid.ULID{ulid.Make()},
+			ServiceIds:           []ulid.ULID{},
+			Intallments:          []debt.Installment{},
+		}
+
+		d.GenerateInstallments()
+
+		d.Intallments[0].Status = debt.Paid
+		d.Intallments[0].PaymentDate = &now
+		d.Intallments[0].PaymentMethod = "credit_card"
+
+		cancelInfo := &debt.CancelInfoDto{
+			DebtId:      d.Id.String(),
+			Reason:      "User requested cancellation",
+			CancelledBy: ulid.Make(),
+		}
+
+		err := d.Cancel(cancelInfo)
+		assert.NotNil(t, err)
+		assert.Equal(t, "cannot cancel debt with paid installments", err.Error())
+	})
 }

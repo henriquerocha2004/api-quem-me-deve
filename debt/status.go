@@ -11,17 +11,20 @@ const (
 	Pending status = iota
 	Paid
 	Canceled
+	Reversed
 )
 
 var statusString = map[status]string{
 	Pending:  "pending",
 	Paid:     "paid",
 	Canceled: "canceled",
+	Reversed: "reversed",
 }
 var statusValue = map[string]status{
 	"pending":  Pending,
 	"paid":     Paid,
 	"canceled": Canceled,
+	"reversed": Reversed,
 }
 
 func (s status) String() string {

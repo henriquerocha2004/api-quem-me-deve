@@ -1,5 +1,7 @@
 package debt
 
+import "github.com/oklog/ulid/v2"
+
 type DebtDto struct {
 	Id                   string           `json:"id,omitempty"`
 	Description          string           `json:"description" validate:"required"`
@@ -42,4 +44,16 @@ type PaymentInfoDto struct {
 	InstallmentId string  `json:"installment_id" validate:"required,ulid"`
 	Amount        float64 `json:"amount" validate:"required,gt=0"`
 	PaymentMethod string  `json:"payment_method" validate:"required"`
+}
+
+type CancelInfoDto struct {
+	DebtId      string `json:"debt_id" validate:"required,ulid"`
+	Reason      string `json:"reason" validate:"required"`
+	CancelledBy ulid.ULID
+}
+
+type ReversalInfoDto struct {
+	DebtId     string `json:"debt_id" validate:"required,ulid"`
+	Reason     string `json:"reason" validate:"required"`
+	ReversedBy ulid.ULID
 }
