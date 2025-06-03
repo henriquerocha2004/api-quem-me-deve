@@ -522,4 +522,180 @@ func TestDebtController(t *testing.T) {
 		assert.Equal(t, "PaymentMethod", response.Errors[3].Field)
 		assert.Equal(t, "This field is required", response.Errors[3].Message)
 	})
+
+	t.Run("Deve cancelar uma dívida com sucesso", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		clientId, _ := ulid.Parse("01F8Z5G4J6K7N3J4X2G4J6K7N3")
+		debtId, _ := ulid.Parse("01F8Z5G4J6K7N3J4X2G4J6K7N3")
+
+		cancelInfo := &debt.CancelInfoDto{
+			DebtId: debtId.String(),
+			Reason: "Client requested cancellation",
+		}
+
+		d := &debt.Debt{
+			Id:                   debtId,
+			UserClientId:         clientId,
+			InstallmentsQuantity: 2,
+			Status:               debt.Pending,
+		}
+
+		debtRepository := mocks.NewMockRepository(ctrl)
+		debtRepository.EXPECT().GetDebt(gomock.Any(), debtId).Return(d, nil)
+		debtRepository.EXPECT().Update(gomock.Any(), d).Return(nil)
+		clientRepository := mocks.NewMockClientReader(ctrl)
+
+		service := debt.NewDebtService(debtRepository, clientRepository)
+		controller := controllers.NewDebtController(service)
+
+		r := chi.NewRouter()
+		r.Post("/v1/debt/cancel", controller.CancelDebt())
+
+		jsonBody, err := json.Marshal(cancelInfo)
+		assert.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, "/v1/debt/cancel", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		var response debt.DebtResponse
+		err = json.NewDecoder(w.Body).Decode(&response)
+		assert.Nil(t, err)
+
+		assert.Equal(t, "success", response.Status)
+		assert.Equal(t, "debt cancelled successfully", response.Message)
+	})
+
+	t.Run("Deve retornar um erro ao tentar cancelar uma dívida com dados inválidos", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		debtRepository := mocks.NewMockRepository(ctrl)
+		clientRepository := mocks.NewMockClientReader(ctrl)
+
+		debtRepository.EXPECT().GetDebt(gomock.Any(), gomock.Any()).Times(0)
+		debtRepository.EXPECT().Update(gomock.Any(), gomock.Any()).Times(0)
+		clientRepository.EXPECT().ClientExists(gomock.Any(), gomock.Any()).Times(0)
+
+		service := debt.NewDebtService(debtRepository, clientRepository)
+		controller := controllers.NewDebtController(service)
+
+		r := chi.NewRouter()
+		r.Post("/v1/debt/cancel", controller.CancelDebt())
+
+		cancelInfo := &debt.CancelInfoDto{
+			DebtId: "invalidDebtId",
+			Reason: "",
+		}
+
+		jsonBody, err := json.Marshal(cancelInfo)
+		assert.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, "/v1/debt/cancel", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		var response customvalidate.ValidationResponse
+		err = json.NewDecoder(w.Body).Decode(&response)
+		assert.Nil(t, err)
+
+		assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
+		assert.Equal(t, 2, len(response.Errors))
+		assert.Equal(t, "DebtId", response.Errors[0].Field)
+		assert.Equal(t, "Invalid ULID format", response.Errors[0].Message)
+		assert.Equal(t, "Reason", response.Errors[1].Field)
+		assert.Equal(t, "This field is required", response.Errors[1].Message)
+	})
+
+	t.Run("Deve reverter uma dívida com sucesso", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		clientId, _ := ulid.Parse("01F8Z5G4J6K7N3J4X2G4J6K7N3")
+		debtId, _ := ulid.Parse("01F8Z5G4J6K7N3J4X2G4J6K7N3")
+
+		reversalInfo := &debt.ReversalInfoDto{
+			DebtId: debtId.String(),
+			Reason: "Client requested reversal",
+		}
+
+		d := &debt.Debt{
+			Id:                   debtId,
+			UserClientId:         clientId,
+			InstallmentsQuantity: 2,
+			Status:               debt.Pending,
+		}
+
+		debtRepository := mocks.NewMockRepository(ctrl)
+		debtRepository.EXPECT().GetDebt(gomock.Any(), debtId).Return(d, nil)
+		debtRepository.EXPECT().Update(gomock.Any(), d).Return(nil)
+		clientRepository := mocks.NewMockClientReader(ctrl)
+
+		service := debt.NewDebtService(debtRepository, clientRepository)
+		controller := controllers.NewDebtController(service)
+
+		r := chi.NewRouter()
+		r.Post("/v1/debt/reversal", controller.ReversalDebt())
+
+		jsonBody, err := json.Marshal(reversalInfo)
+		assert.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, "/v1/debt/reversal", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		var response debt.DebtResponse
+		err = json.NewDecoder(w.Body).Decode(&response)
+		assert.Nil(t, err)
+
+		assert.Equal(t, "success", response.Status)
+		assert.Equal(t, "debt reversed successfully", response.Message)
+	})
+
+	t.Run("Deve retornar um erro ao tentar reverter uma dívida com dados inválidos", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		debtRepository := mocks.NewMockRepository(ctrl)
+		clientRepository := mocks.NewMockClientReader(ctrl)
+
+		debtRepository.EXPECT().GetDebt(gomock.Any(), gomock.Any()).Times(0)
+		debtRepository.EXPECT().Update(gomock.Any(), gomock.Any()).Times(0)
+		clientRepository.EXPECT().ClientExists(gomock.Any(), gomock.Any()).Times(0)
+
+		service := debt.NewDebtService(debtRepository, clientRepository)
+		controller := controllers.NewDebtController(service)
+
+		r := chi.NewRouter()
+		r.Post("/v1/debt/reversal", controller.ReversalDebt())
+
+		reversalInfo := &debt.ReversalInfoDto{
+			DebtId: "invalidDebtId",
+			Reason: "",
+		}
+
+		jsonBody, err := json.Marshal(reversalInfo)
+		assert.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, "/v1/debt/reversal", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		var response customvalidate.ValidationResponse
+		err = json.NewDecoder(w.Body).Decode(&response)
+		assert.Nil(t, err)
+
+		assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
+		assert.Equal(t, 2, len(response.Errors))
+		assert.Equal(t, "DebtId", response.Errors[0].Field)
+		assert.Equal(t, "Invalid ULID format", response.Errors[0].Message)
+		assert.Equal(t, "Reason", response.Errors[1].Field)
+		assert.Equal(t, "This field is required", response.Errors[1].Message)
+	})
 }

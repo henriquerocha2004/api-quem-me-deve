@@ -409,4 +409,168 @@ func TestDebtServiceTests(t *testing.T) {
 		assert.Equal(t, "error", response.Status)
 		assert.Equal(t, "debt not found", response.Message)
 	})
+
+	t.Run("Deve realizar o cancelamento de uma divida", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		ctx := context.Background()
+		debtRepo := mocks.NewMockRepository(ctrl)
+		cliRepo := mocks.NewMockClientReader(ctrl)
+		service := debt.NewDebtService(debtRepo, cliRepo)
+
+		d := &debt.Debt{
+			Id:                   ulid.Make(),
+			UserClientId:         ulid.Make(),
+			Status:               debt.Pending,
+			DueDate:              nil,
+			ProductIds:           []ulid.ULID{},
+			ServiceIds:           []ulid.ULID{},
+			InstallmentsQuantity: 1,
+		}
+
+		debtId, _ := ulid.Parse(d.Id.String())
+		debtRepo.EXPECT().GetDebt(gomock.Any(), debtId).Return(d, nil)
+
+		debtRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
+
+		cancelInfo := &debt.CancelInfoDto{
+			DebtId:      d.Id.String(),
+			Reason:      "Client requested cancellation",
+			CancelledBy: ulid.Make(),
+		}
+
+		response := service.CancelDebt(ctx, cancelInfo)
+
+		assert.Equal(t, "success", response.Status)
+		assert.Equal(t, "debt cancelled successfully", response.Message)
+		assert.Equal(t, debt.Canceled, d.Status)
+	})
+
+	t.Run("Deve retornar um erro caso seja informado um debtoId inválido para cancelamento", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		ctx := context.Background()
+		debtRepo := mocks.NewMockRepository(ctrl)
+		cliRepo := mocks.NewMockClientReader(ctrl)
+		service := debt.NewDebtService(debtRepo, cliRepo)
+
+		cancelInfo := &debt.CancelInfoDto{
+			DebtId:      "invalid-debt-id",
+			Reason:      "Client requested cancellation",
+			CancelledBy: ulid.Make(),
+		}
+
+		response := service.CancelDebt(ctx, cancelInfo)
+
+		assert.Equal(t, "error", response.Status)
+		assert.Equal(t, "invalid debt ID", response.Message)
+	})
+
+	t.Run("Deve retornar um erro caso o debito não seja encontrado para cancelamento", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		ctx := context.Background()
+		debtRepo := mocks.NewMockRepository(ctrl)
+		cliRepo := mocks.NewMockClientReader(ctrl)
+		service := debt.NewDebtService(debtRepo, cliRepo)
+
+		cancelInfo := &debt.CancelInfoDto{
+			DebtId:      "01F8Z5G4J6K7N3J4X2G4J6K7N3",
+			Reason:      "Client requested cancellation",
+			CancelledBy: ulid.Make(),
+		}
+
+		debtId, _ := ulid.Parse(cancelInfo.DebtId)
+		debtRepo.EXPECT().GetDebt(gomock.Any(), debtId).Return(nil, nil)
+
+		response := service.CancelDebt(ctx, cancelInfo)
+
+		assert.Equal(t, "error", response.Status)
+		assert.Equal(t, "debt not found", response.Message)
+	})
+
+	t.Run("Deve realizar um estorno de uma divida", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		ctx := context.Background()
+		debtRepo := mocks.NewMockRepository(ctrl)
+		cliRepo := mocks.NewMockClientReader(ctrl)
+		service := debt.NewDebtService(debtRepo, cliRepo)
+
+		d := &debt.Debt{
+			Id:                   ulid.Make(),
+			UserClientId:         ulid.Make(),
+			Status:               debt.Pending,
+			DueDate:              nil,
+			ProductIds:           []ulid.ULID{},
+			ServiceIds:           []ulid.ULID{},
+			InstallmentsQuantity: 1,
+		}
+
+		debtId, _ := ulid.Parse(d.Id.String())
+		debtRepo.EXPECT().GetDebt(gomock.Any(), debtId).Return(d, nil)
+
+		debtRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
+
+		cancelInfo := &debt.ReversalInfoDto{
+			DebtId:     d.Id.String(),
+			Reason:     "Client requested Reversal",
+			ReversedBy: ulid.Make(),
+		}
+
+		response := service.ReverseDebt(ctx, cancelInfo)
+
+		assert.Equal(t, "success", response.Status)
+		assert.Equal(t, "debt reversed successfully", response.Message)
+		assert.Equal(t, debt.Reversed, d.Status)
+	})
+
+	t.Run("Deve retornar um erro caso seja informado um debtoId inválido para estorno", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		ctx := context.Background()
+		debtRepo := mocks.NewMockRepository(ctrl)
+		cliRepo := mocks.NewMockClientReader(ctrl)
+		service := debt.NewDebtService(debtRepo, cliRepo)
+
+		cancelInfo := &debt.ReversalInfoDto{
+			DebtId:     "invalid-debt-id",
+			Reason:     "Client requested Reversal",
+			ReversedBy: ulid.Make(),
+		}
+
+		response := service.ReverseDebt(ctx, cancelInfo)
+
+		assert.Equal(t, "error", response.Status)
+		assert.Equal(t, "invalid debt ID", response.Message)
+	})
+
+	t.Run("Deve retornar um erro caso o debito não seja encontrado para estorno", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		ctx := context.Background()
+		debtRepo := mocks.NewMockRepository(ctrl)
+		cliRepo := mocks.NewMockClientReader(ctrl)
+		service := debt.NewDebtService(debtRepo, cliRepo)
+
+		cancelInfo := &debt.ReversalInfoDto{
+			DebtId:     "01F8Z5G4J6K7N3J4X2G4J6K7N3",
+			Reason:     "Client requested Reversal",
+			ReversedBy: ulid.Make(),
+		}
+
+		debtId, _ := ulid.Parse(cancelInfo.DebtId)
+		debtRepo.EXPECT().GetDebt(gomock.Any(), debtId).Return(nil, nil)
+
+		response := service.ReverseDebt(ctx, cancelInfo)
+
+		assert.Equal(t, "error", response.Status)
+		assert.Equal(t, "debt not found", response.Message)
+	})
 }

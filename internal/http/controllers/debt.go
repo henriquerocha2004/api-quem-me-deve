@@ -151,3 +151,57 @@ func (c *DebtController) PayInstallment() http.HandlerFunc {
 		response(w, http.StatusOK, output)
 	})
 }
+
+func (c *DebtController) CancelDebt() http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var cancelInfo debt.CancelInfoDto
+		if err := json.NewDecoder(r.Body).Decode(&cancelInfo); err != nil {
+			response(w, http.StatusBadRequest, "Invalid request")
+			return
+		}
+
+		v := customvalidate.Validate(cancelInfo)
+		if len(v.Errors) > 0 {
+			response(w, http.StatusUnprocessableEntity, v)
+			return
+		}
+
+		// TODO: Ajustar para colocar o ID do usuário autenticado
+		cancelInfo.CancelledBy = ulid.Make()
+
+		output := c.DebtService.CancelDebt(r.Context(), &cancelInfo)
+		if output.Status == "error" {
+			response(w, http.StatusInternalServerError, output.Message)
+			return
+		}
+
+		response(w, http.StatusOK, output)
+	})
+}
+
+func (c *DebtController) ReversalDebt() http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var reversalInfo debt.ReversalInfoDto
+		if err := json.NewDecoder(r.Body).Decode(&reversalInfo); err != nil {
+			response(w, http.StatusBadRequest, "Invalid request")
+			return
+		}
+
+		v := customvalidate.Validate(reversalInfo)
+		if len(v.Errors) > 0 {
+			response(w, http.StatusUnprocessableEntity, v)
+			return
+		}
+
+		// TODO: Ajustar para colocar o ID do usuário autenticado
+		reversalInfo.ReversedBy = ulid.Make()
+
+		output := c.DebtService.ReverseDebt(r.Context(), &reversalInfo)
+		if output.Status == "error" {
+			response(w, http.StatusInternalServerError, output.Message)
+			return
+		}
+
+		response(w, http.StatusOK, output)
+	})
+}

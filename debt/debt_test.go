@@ -434,6 +434,9 @@ func TestDebtTests(t *testing.T) {
 		err := d.Cancel(cancelInfo)
 		assert.Nil(t, err)
 		assert.Equal(t, debt.Canceled, d.Status)
+		assert.NotNil(t, d.CancelInfo)
+		assert.Equal(t, d.CancelInfo.Reason, cancelInfo.Reason)
+		assert.Equal(t, d.CancelInfo.CancelledBy.String(), cancelInfo.CancelledBy.String())
 	})
 
 	t.Run("Deve retornar erro ao tentar cancelar uma divida que nao esta pendente", func(t *testing.T) {
@@ -498,5 +501,113 @@ func TestDebtTests(t *testing.T) {
 		err := d.Cancel(cancelInfo)
 		assert.NotNil(t, err)
 		assert.Equal(t, "cannot cancel debt with paid installments", err.Error())
+	})
+
+	t.Run("deve realizar um estorno com sucesso", func(t *testing.T) {
+		now := time.Now()
+		dueDate := now.Add(24 * time.Hour)
+
+		d := &debt.Debt{
+			Id:                   ulid.Make(),
+			Description:          "Test Debt",
+			TotalValue:           1000,
+			DueDate:              &dueDate,
+			InstallmentsQuantity: 2,
+			DebtDate:             nil,
+			Status:               debt.Pending,
+			UserClientId:         ulid.Make(),
+			ProductIds:           []ulid.ULID{ulid.Make()},
+			ServiceIds:           []ulid.ULID{},
+			Intallments:          []debt.Installment{},
+		}
+
+		d.GenerateInstallments()
+
+		reverseInfo := debt.ReversalInfoDto{
+			DebtId:     d.Id.String(),
+			Reason:     "Cliente desistiu da compra",
+			ReversedBy: ulid.Make(),
+		}
+
+		err := d.Reverse(&reverseInfo)
+		assert.Nil(t, err)
+		assert.Equal(t, d.Status.String(), debt.Reversed.String())
+		assert.NotNil(t, d.ReversalInfo)
+		assert.Equal(t, d.ReversalInfo.Reason, reverseInfo.Reason)
+		assert.Equal(t, d.ReversalInfo.ReversedBy.String(), reverseInfo.ReversedBy.String())
+
+		for _, installment := range d.Intallments {
+			assert.Equal(t, debt.Canceled.String(), installment.Status.String())
+		}
+	})
+
+	t.Run("deve estornar uma divida com parcelas pagas", func(t *testing.T) {
+		now := time.Now()
+		dueDate := now.Add(24 * time.Hour)
+
+		d := &debt.Debt{
+			Id:                   ulid.Make(),
+			Description:          "Test Debt",
+			TotalValue:           1000,
+			DueDate:              &dueDate,
+			InstallmentsQuantity: 2,
+			DebtDate:             nil,
+			Status:               debt.Pending,
+			UserClientId:         ulid.Make(),
+			ProductIds:           []ulid.ULID{ulid.Make()},
+			ServiceIds:           []ulid.ULID{},
+			Intallments:          []debt.Installment{},
+		}
+
+		d.GenerateInstallments()
+
+		paymentInfo := debt.PaymentInfoDto{
+			DebtId:        d.Id.String(),
+			InstallmentId: d.Intallments[0].Id.String(),
+			Amount:        500,
+			PaymentMethod: "Cartão de crédito",
+		}
+
+		d.PayInstallment(&paymentInfo)
+
+		reverseInfo := debt.ReversalInfoDto{
+			DebtId:     d.Id.String(),
+			Reason:     "Produto com defeito",
+			ReversedBy: ulid.Make(),
+		}
+
+		err := d.Reverse(&reverseInfo)
+		assert.Nil(t, err)
+		assert.Equal(t, debt.Reversed.String(), d.Status.String())
+		assert.Equal(t, debt.Reversed.String(), d.Intallments[0].Status.String())
+		assert.NotNil(t, d.ReversalInfo)
+	})
+
+	t.Run("deve retornar um erro caso a divida esteja cancelada ou já estornada ao tentar realizar o estorno", func(t *testing.T) {
+		now := time.Now()
+		dueDate := now.Add(24 * time.Hour)
+
+		d := &debt.Debt{
+			Id:                   ulid.Make(),
+			Description:          "Test Debt",
+			TotalValue:           1000,
+			DueDate:              &dueDate,
+			InstallmentsQuantity: 2,
+			DebtDate:             nil,
+			Status:               debt.Canceled,
+			UserClientId:         ulid.Make(),
+			ProductIds:           []ulid.ULID{ulid.Make()},
+			ServiceIds:           []ulid.ULID{},
+			Intallments:          []debt.Installment{},
+		}
+
+		reverseInfo := debt.ReversalInfoDto{
+			DebtId:     d.Id.String(),
+			Reason:     "Cliente desistiu da compra",
+			ReversedBy: ulid.Make(),
+		}
+
+		err := d.Reverse(&reverseInfo)
+		assert.Error(t, err, "debt is already canceled or reversed")
 	})
 }

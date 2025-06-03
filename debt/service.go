@@ -11,6 +11,8 @@ import (
 
 type Service interface {
 	CreateDebt(ctx context.Context, debt *DebtDto) DebtResponse
+	CancelDebt(ctx context.Context, cancelInfo *CancelInfoDto) DebtResponse
+	ReverseDebt(ctx context.Context, reverseInfo *ReversalInfoDto) DebtResponse
 	GetUserDebts(ctx context.Context, userId ulid.ULID) DebtResponse
 	GetDebtInstallments(ctx context.Context, clientId, debtId ulid.ULID) DebtResponse
 	Debts(ctx context.Context, params paginate.PaginateRequest) DebtResponse
@@ -98,6 +100,106 @@ func (s *debtService) CreateDebt(ctx context.Context, d *DebtDto) DebtResponse {
 		Message: "debt created successfully",
 	}
 
+}
+
+func (s *debtService) CancelDebt(ctx context.Context, cancelInfo *CancelInfoDto) DebtResponse {
+	debtId, err := ulid.Parse(cancelInfo.DebtId)
+	if err != nil {
+		log.Println("Error parsing debt ID:", err)
+		return DebtResponse{
+			Status:  "error",
+			Message: "invalid debt ID",
+		}
+	}
+
+	debt, err := s.debtRepo.GetDebt(ctx, debtId)
+	if err != nil {
+		log.Println("Error retrieving debt:", err)
+		return DebtResponse{
+			Status:  "error",
+			Message: "error retrieving debt",
+		}
+	}
+
+	if debt == nil {
+		return DebtResponse{
+			Status:  "error",
+			Message: "debt not found",
+		}
+	}
+
+	err = debt.Cancel(cancelInfo)
+	if err != nil {
+		log.Println("Error cancelling debt:", err)
+		return DebtResponse{
+			Status:  "error",
+			Message: err.Error(),
+		}
+	}
+
+	err = s.debtRepo.Update(ctx, debt)
+	if err != nil {
+		log.Println("Error updating debt:", err)
+		return DebtResponse{
+			Status:  "error",
+			Message: "error updating debt",
+		}
+	}
+
+	return DebtResponse{
+		Status:  "success",
+		Message: "debt cancelled successfully",
+	}
+}
+
+func (s *debtService) ReverseDebt(ctx context.Context, reverseInfo *ReversalInfoDto) DebtResponse {
+	debtId, err := ulid.Parse(reverseInfo.DebtId)
+	if err != nil {
+		log.Println("Error parsing debt ID:", err)
+		return DebtResponse{
+			Status:  "error",
+			Message: "invalid debt ID",
+		}
+	}
+
+	debt, err := s.debtRepo.GetDebt(ctx, debtId)
+	if err != nil {
+		log.Println("Error retrieving debt:", err)
+		return DebtResponse{
+			Status:  "error",
+			Message: "error retrieving debt",
+		}
+	}
+
+	if debt == nil {
+		log.Println("Debt not found")
+		return DebtResponse{
+			Status:  "error",
+			Message: "debt not found",
+		}
+	}
+
+	err = debt.Reverse(reverseInfo)
+	if err != nil {
+		log.Println("Error reversing debt:", err)
+		return DebtResponse{
+			Status:  "error",
+			Message: "error reversing debt",
+		}
+	}
+	err = s.debtRepo.Update(ctx, debt)
+	if err != nil {
+		log.Println("Error updating debt:", err)
+		return DebtResponse{
+			Status:  "error",
+			Message: "error updating debt",
+		}
+	}
+
+	return DebtResponse{
+		Status:  "success",
+		Message: "debt reversed successfully",
+	}
 }
 
 func (s *debtService) GetUserDebts(ctx context.Context, userId ulid.ULID) DebtResponse {
