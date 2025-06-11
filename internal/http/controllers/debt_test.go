@@ -472,7 +472,7 @@ func TestDebtController(t *testing.T) {
 		assert.Nil(t, err)
 
 		assert.Equal(t, "success", response.Status)
-		assert.Equal(t, "i nstallment paid successfully", response.Message)
+		assert.Equal(t, "installment paid successfully", response.Message)
 	})
 
 	t.Run("Deve retornar um erro ao tentar pagar uma parcela com dados inválidos", func(t *testing.T) {

@@ -1,7 +1,17 @@
 FROM golang:1.24-alpine
 
+# instalar o make
+RUN apk add --no-cache make
+
 # Instalar air para hot reload
 RUN wget -O - https://raw.githubusercontent.com/cosmtrek/air/master/install.sh | sh
+
+# instalar migrate (Library para migrações de banco de dados)
+RUN apk add --no-cache curl unzip \
+    && curl -L https://github.com/golang-migrate/migrate/releases/download/v4.15.2/migrate.linux-amd64.tar.gz -o migrate.tar.gz \
+    && tar -xzvf migrate.tar.gz -C /usr/local/bin \
+    && chmod +x /usr/local/bin/migrate \
+    && rm migrate.tar.gz
 
 # Instalar dependências de desenvolvimento
 RUN apk add --no-cache git
