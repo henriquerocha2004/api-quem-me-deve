@@ -15,7 +15,8 @@
                 "eamodio.gitlens",
                 "neonxp.gotools",
                 "premparihar.gotestexplorer",
-                "ms-vscode.makefile-tools"
+                "ms-vscode.makefile-tools",
+                "redhat.vscode-yaml"
             ],
             "settings": {
                 "go.toolsManagement.checkForUpdates": "local",

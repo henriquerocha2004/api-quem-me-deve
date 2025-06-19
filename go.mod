@@ -9,6 +9,8 @@ require (
 	go.uber.org/mock v0.5.2
 )
 
+require github.com/lib/pq v1.10.9 // indirect
+
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect

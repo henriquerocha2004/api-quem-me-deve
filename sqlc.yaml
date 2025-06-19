@@ -1,0 +1,11 @@
+version: "2"
+
+sql:
+  - engine: "postgresql"
+    schema: "internal/database/schema/schema.sql"
+    queries: "debt/sqlc/queries/"
+    gen:
+      go:
+        package: "sqlc"
+        out: "debt/sqlc"
+        emit_json_tags: true

@@ -25,6 +25,17 @@ migrate-redo:
 migrate-version:
 	$(MIGRATE_BIN) -path $(MIGRATIONS_DIR) -database "$(DB_URL)" version
 
+refresh-schema:
+	pg_dump --schema-only --no-owner --file=./internal/database/schema/schema.sql -d $(DB_URL)
+
+sqlc-generate:
+	sqlc generate --file=./sqlc.yaml
+
+build-db:
+	make migrate-up
+	make refresh-schema
+	make sqlc-generate
+
 # Mostrar ajuda
 help:
 	@echo "Comandos disponíveis:"
