@@ -12,7 +12,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	clientMemory "github.com/henriquerocha2004/quem-me-deve-api/client/memory"
 	"github.com/henriquerocha2004/quem-me-deve-api/debt"
-	debtMemory "github.com/henriquerocha2004/quem-me-deve-api/debt/memory"
 	"github.com/henriquerocha2004/quem-me-deve-api/debt/mocks"
 	"github.com/henriquerocha2004/quem-me-deve-api/internal/http/controllers"
 	"github.com/henriquerocha2004/quem-me-deve-api/internal/http/customvalidate"
@@ -23,7 +22,13 @@ import (
 
 func TestDebtController(t *testing.T) {
 	t.Run("Deve criar uma divida com sucesso", func(t *testing.T) {
-		service := debt.NewDebtService(debtMemory.NewMemoryRepository(), clientMemory.NewClientDebtReader())
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		debtRepo := mocks.NewMockRepository(ctrl)
+		debtRepo.EXPECT().Save(gomock.Any(), gomock.Any()).Return(nil).Times(1)
+
+		service := debt.NewDebtService(debtRepo, clientMemory.NewClientDebtReader())
 		controller := controllers.NewDebtController(service)
 
 		r := chi.NewRouter()
@@ -50,7 +55,13 @@ func TestDebtController(t *testing.T) {
 	})
 
 	t.Run("deve retornar erro 422 (Unprocessable Entity). Validação dos dados de entrada", func(t *testing.T) {
-		service := debt.NewDebtService(debtMemory.NewMemoryRepository(), clientMemory.NewClientDebtReader())
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		debtRepo := mocks.NewMockRepository(ctrl)
+		debtRepo.EXPECT().Save(gomock.Any(), gomock.Any()).Return(nil).Times(0)
+
+		service := debt.NewDebtService(debtRepo, clientMemory.NewClientDebtReader())
 		controller := controllers.NewDebtController(service)
 
 		r := chi.NewRouter()
