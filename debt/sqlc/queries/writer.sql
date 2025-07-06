@@ -28,5 +28,5 @@ INSERT INTO public.cancel_info (id, reason, cancel_date, cancelled_by, created_a
 VALUES ($1, $2, $3, $4, $5, $6, $7);
 
 -- name: CreateReversalInfo :exec
-INSERT INTO public.reversal_info (id, reason, reversal_date, reversed_by, reversed_installment_qtd, cancelled_installment_qtd, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
+INSERT INTO public.reversal_info (id, reason, reversal_date, reversed_by, reversed_installment_qtd, cancelled_installment_qtd, created_at, updated_at, debt_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);

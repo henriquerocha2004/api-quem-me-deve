@@ -3,11 +3,12 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	cliMemory "github.com/henriquerocha2004/quem-me-deve-api/client/memory"
 	"github.com/henriquerocha2004/quem-me-deve-api/debt"
-	debtMemory "github.com/henriquerocha2004/quem-me-deve-api/debt/memory"
+	"github.com/henriquerocha2004/quem-me-deve-api/debt/gorm"
 	"github.com/henriquerocha2004/quem-me-deve-api/internal/container"
 	"github.com/henriquerocha2004/quem-me-deve-api/internal/http/routes"
 )
@@ -34,8 +35,22 @@ func main() {
 
 func fillDependencies() *container.Dependencies {
 
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_PASSWORD"),
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_PORT"),
+		os.Getenv("DB_NAME"),
+	)
+
+	gormDB, err := gorm.NewGorm(dsn)
+	if err != nil {
+		fmt.Println("Error connecting to the database:", err)
+		return nil
+	}
+
 	// debt dependencies
-	debtRepo := debtMemory.NewMemoryRepository()
+	debtRepo := gorm.NewGormDebtRepository(gormDB)
 	cliRepo := cliMemory.NewClientDebtReader()
 
 	service := debt.NewDebtService(debtRepo, cliRepo)

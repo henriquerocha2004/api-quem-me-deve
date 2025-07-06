@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS reversal_info (
     reversed_installment_qtd INTEGER NOT NULL DEFAULT 0,
     cancelled_installment_qtd INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    debt_id CHAR(26) NOT NULL REFERENCES debts(id)
 );
 
 -- Índices para otimizar consultas

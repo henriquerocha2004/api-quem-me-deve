@@ -79,8 +79,8 @@ func (q *Queries) CreateInstallment(ctx context.Context, arg CreateInstallmentPa
 }
 
 const createReversalInfo = `-- name: CreateReversalInfo :exec
-INSERT INTO public.reversal_info (id, reason, reversal_date, reversed_by, reversed_installment_qtd, cancelled_installment_qtd, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO public.reversal_info (id, reason, reversal_date, reversed_by, reversed_installment_qtd, cancelled_installment_qtd, created_at, updated_at, debt_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 `
 
 type CreateReversalInfoParams struct {
@@ -92,6 +92,7 @@ type CreateReversalInfoParams struct {
 	CancelledInstallmentQtd int32        `json:"cancelled_installment_qtd"`
 	CreatedAt               sql.NullTime `json:"created_at"`
 	UpdatedAt               sql.NullTime `json:"updated_at"`
+	DebtID                  string       `json:"debt_id"`
 }
 
 func (q *Queries) CreateReversalInfo(ctx context.Context, arg CreateReversalInfoParams) error {
@@ -104,6 +105,7 @@ func (q *Queries) CreateReversalInfo(ctx context.Context, arg CreateReversalInfo
 		arg.CancelledInstallmentQtd,
 		arg.CreatedAt,
 		arg.UpdatedAt,
+		arg.DebtID,
 	)
 	return err
 }

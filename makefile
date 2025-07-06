@@ -1,5 +1,6 @@
 # Configurações
 DB_URL=postgres://devuser:devpass@postgres:5432/devdb?sslmode=disable
+DB_URL_TEST=postgres://devuser:devpass@postgres:5432/devdb_test?sslmode=disable
 MIGRATIONS_DIR=./internal/database/migrations
 MIGRATE_BIN=migrate
 
@@ -11,10 +12,12 @@ migrate-new:
 # Rodar as migrations
 migrate-up:
 	$(MIGRATE_BIN) -path $(MIGRATIONS_DIR) -database "$(DB_URL)" up
+	$(MIGRATE_BIN) -path $(MIGRATIONS_DIR) -database "$(DB_URL_TEST)" up
 
 # Reverter última migration
 migrate-down:
 	$(MIGRATE_BIN) -path $(MIGRATIONS_DIR) -database "$(DB_URL)" down 1
+	$(MIGRATE_BIN) -path $(MIGRATIONS_DIR) -database "$(DB_URL_TEST)" down 1
 
 # Dropar todo o schema e rodar tudo novamente
 migrate-redo:
@@ -34,7 +37,6 @@ sqlc-generate:
 build-db:
 	make migrate-up
 	make refresh-schema
-	make sqlc-generate
 
 # Mostrar ajuda
 help:

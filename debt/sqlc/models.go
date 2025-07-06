@@ -58,6 +58,7 @@ type ReversalInfo struct {
 	CancelledInstallmentQtd int32        `json:"cancelled_installment_qtd"`
 	CreatedAt               sql.NullTime `json:"created_at"`
 	UpdatedAt               sql.NullTime `json:"updated_at"`
+	DebtID                  string       `json:"debt_id"`
 }
 
 type SchemaMigration struct {

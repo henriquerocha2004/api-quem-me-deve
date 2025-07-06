@@ -20,7 +20,7 @@ var statusString = map[status]string{
 	Canceled: "canceled",
 	Reversed: "reversed",
 }
-var statusValue = map[string]status{
+var StatusValue = map[string]status{
 	"pending":  Pending,
 	"paid":     Paid,
 	"canceled": Canceled,
@@ -41,7 +41,7 @@ func (s *status) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	if val, ok := statusValue[str]; ok {
+	if val, ok := StatusValue[str]; ok {
 		*s = val
 		return nil
 	}

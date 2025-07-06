@@ -89,7 +89,8 @@ CREATE TABLE public.reversal_info (
     reversed_installment_qtd integer DEFAULT 0 NOT NULL,
     cancelled_installment_qtd integer DEFAULT 0 NOT NULL,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    debt_id character(26) NOT NULL
 );
 
 
@@ -234,6 +235,14 @@ ALTER TABLE ONLY public.cancel_info
 
 ALTER TABLE ONLY public.installments
     ADD CONSTRAINT installments_debt_id_fkey FOREIGN KEY (debt_id) REFERENCES public.debts(id);
+
+
+--
+-- Name: reversal_info reversal_info_debt_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.reversal_info
+    ADD CONSTRAINT reversal_info_debt_id_fkey FOREIGN KEY (debt_id) REFERENCES public.debts(id);
 
 
 --
