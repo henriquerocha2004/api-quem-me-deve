@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	debt "github.com/henriquerocha2004/quem-me-deve-api/debt"
+	debt "github.com/henriquerocha2004/quem-me-deve-api/core/debt"
 	paginate "github.com/henriquerocha2004/quem-me-deve-api/pkg/paginate"
 	ulid "github.com/oklog/ulid/v2"
 	gomock "go.uber.org/mock/gomock"

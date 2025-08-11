@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/henriquerocha2004/quem-me-deve-api/debt"
+	"github.com/henriquerocha2004/quem-me-deve-api/core/debt"
 	"github.com/henriquerocha2004/quem-me-deve-api/internal/http/customvalidate"
 	"github.com/henriquerocha2004/quem-me-deve-api/pkg/paginate"
 	"github.com/oklog/ulid/v2"

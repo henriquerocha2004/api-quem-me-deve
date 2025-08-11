@@ -5,18 +5,19 @@ import (
 	"log"
 	"time"
 
+	"github.com/henriquerocha2004/quem-me-deve-api/core/shared"
 	"github.com/henriquerocha2004/quem-me-deve-api/pkg/paginate"
 	"github.com/oklog/ulid/v2"
 )
 
 type Service interface {
-	CreateDebt(ctx context.Context, debt *DebtDto) DebtResponse
-	CancelDebt(ctx context.Context, cancelInfo *CancelInfoDto) DebtResponse
-	ReverseDebt(ctx context.Context, reverseInfo *ReversalInfoDto) DebtResponse
-	GetUserDebts(ctx context.Context, userId ulid.ULID) DebtResponse
-	GetDebtInstallments(ctx context.Context, clientId, debtId ulid.ULID) DebtResponse
-	Debts(ctx context.Context, params paginate.PaginateRequest) DebtResponse
-	PayInstallment(ctx context.Context, pgInfo *PaymentInfoDto) DebtResponse
+	CreateDebt(ctx context.Context, debt *DebtDto) shared.ServiceResponse
+	CancelDebt(ctx context.Context, cancelInfo *CancelInfoDto) shared.ServiceResponse
+	ReverseDebt(ctx context.Context, reverseInfo *ReversalInfoDto) shared.ServiceResponse
+	GetUserDebts(ctx context.Context, userId ulid.ULID) shared.ServiceResponse
+	GetDebtInstallments(ctx context.Context, clientId, debtId ulid.ULID) shared.ServiceResponse
+	Debts(ctx context.Context, params paginate.PaginateRequest) shared.ServiceResponse
+	PayInstallment(ctx context.Context, pgInfo *PaymentInfoDto) shared.ServiceResponse
 }
 
 type debtService struct {
@@ -31,7 +32,7 @@ func NewDebtService(debtRepo Repository, cliRepo ClientReader) *debtService {
 	}
 }
 
-func (s *debtService) CreateDebt(ctx context.Context, d *DebtDto) DebtResponse {
+func (s *debtService) CreateDebt(ctx context.Context, d *DebtDto) shared.ServiceResponse {
 	now := time.Now()
 	dueDate, _ := time.Parse(time.DateOnly, d.DueDate)
 	clientUserId, _ := ulid.Parse(d.UserClientId)
@@ -39,7 +40,7 @@ func (s *debtService) CreateDebt(ctx context.Context, d *DebtDto) DebtResponse {
 	serviceIds, err := s.putServiceIds(d.ServiceIds)
 	if err != nil {
 		log.Println("Error parsing service IDs:", err)
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "invalid service IDs",
 		}
@@ -48,7 +49,7 @@ func (s *debtService) CreateDebt(ctx context.Context, d *DebtDto) DebtResponse {
 	productIds, err := s.putProductIds(d.ProductIds)
 	if err != nil {
 		log.Println("Error parsing product IDs:", err)
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "invalid product IDs",
 		}
@@ -70,7 +71,7 @@ func (s *debtService) CreateDebt(ctx context.Context, d *DebtDto) DebtResponse {
 	validationErrors := debt.Validate()
 	if len(validationErrors.Errors) > 0 {
 		log.Println("Validation errors:", validationErrors)
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "validation errors",
 			Data:    validationErrors,
@@ -80,7 +81,7 @@ func (s *debtService) CreateDebt(ctx context.Context, d *DebtDto) DebtResponse {
 	err = debt.GenerateInstallments()
 	if err != nil {
 		log.Println("Error generating installments:", err)
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "error generating installments",
 		}
@@ -89,24 +90,24 @@ func (s *debtService) CreateDebt(ctx context.Context, d *DebtDto) DebtResponse {
 	err = s.debtRepo.Save(ctx, debt)
 	if err != nil {
 		log.Println("Error saving debt:", err)
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "error saving debt",
 		}
 	}
 
-	return DebtResponse{
+	return shared.ServiceResponse{
 		Status:  "success",
 		Message: "debt created successfully",
 	}
 
 }
 
-func (s *debtService) CancelDebt(ctx context.Context, cancelInfo *CancelInfoDto) DebtResponse {
+func (s *debtService) CancelDebt(ctx context.Context, cancelInfo *CancelInfoDto) shared.ServiceResponse {
 	debtId, err := ulid.Parse(cancelInfo.DebtId)
 	if err != nil {
 		log.Println("Error parsing debt ID:", err)
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "invalid debt ID",
 		}
@@ -115,14 +116,14 @@ func (s *debtService) CancelDebt(ctx context.Context, cancelInfo *CancelInfoDto)
 	debt, err := s.debtRepo.GetDebt(ctx, debtId)
 	if err != nil {
 		log.Println("Error retrieving debt:", err)
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "error retrieving debt",
 		}
 	}
 
 	if debt == nil {
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "debt not found",
 		}
@@ -131,7 +132,7 @@ func (s *debtService) CancelDebt(ctx context.Context, cancelInfo *CancelInfoDto)
 	err = debt.Cancel(cancelInfo)
 	if err != nil {
 		log.Println("Error cancelling debt:", err)
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: err.Error(),
 		}
@@ -140,23 +141,23 @@ func (s *debtService) CancelDebt(ctx context.Context, cancelInfo *CancelInfoDto)
 	err = s.debtRepo.Update(ctx, debt)
 	if err != nil {
 		log.Println("Error updating debt:", err)
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "error updating debt",
 		}
 	}
 
-	return DebtResponse{
+	return shared.ServiceResponse{
 		Status:  "success",
 		Message: "debt cancelled successfully",
 	}
 }
 
-func (s *debtService) ReverseDebt(ctx context.Context, reverseInfo *ReversalInfoDto) DebtResponse {
+func (s *debtService) ReverseDebt(ctx context.Context, reverseInfo *ReversalInfoDto) shared.ServiceResponse {
 	debtId, err := ulid.Parse(reverseInfo.DebtId)
 	if err != nil {
 		log.Println("Error parsing debt ID:", err)
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "invalid debt ID",
 		}
@@ -165,7 +166,7 @@ func (s *debtService) ReverseDebt(ctx context.Context, reverseInfo *ReversalInfo
 	debt, err := s.debtRepo.GetDebt(ctx, debtId)
 	if err != nil {
 		log.Println("Error retrieving debt:", err)
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "error retrieving debt",
 		}
@@ -173,7 +174,7 @@ func (s *debtService) ReverseDebt(ctx context.Context, reverseInfo *ReversalInfo
 
 	if debt == nil {
 		log.Println("Debt not found")
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "debt not found",
 		}
@@ -182,7 +183,7 @@ func (s *debtService) ReverseDebt(ctx context.Context, reverseInfo *ReversalInfo
 	err = debt.Reverse(reverseInfo)
 	if err != nil {
 		log.Println("Error reversing debt:", err)
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "error reversing debt",
 		}
@@ -190,30 +191,30 @@ func (s *debtService) ReverseDebt(ctx context.Context, reverseInfo *ReversalInfo
 	err = s.debtRepo.Update(ctx, debt)
 	if err != nil {
 		log.Println("Error updating debt:", err)
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "error updating debt",
 		}
 	}
 
-	return DebtResponse{
+	return shared.ServiceResponse{
 		Status:  "success",
 		Message: "debt reversed successfully",
 	}
 }
 
-func (s *debtService) GetUserDebts(ctx context.Context, userId ulid.ULID) DebtResponse {
+func (s *debtService) GetUserDebts(ctx context.Context, userId ulid.ULID) shared.ServiceResponse {
 	debts, err := s.debtRepo.ClientUserDebts(ctx, userId)
 	if err != nil {
 		log.Println("Error retrieving debts:", err)
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "error retrieving debts",
 		}
 	}
 
 	if len(debts) == 0 {
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "success",
 			Message: "no debts found",
 		}
@@ -221,25 +222,25 @@ func (s *debtService) GetUserDebts(ctx context.Context, userId ulid.ULID) DebtRe
 
 	debtsDto := s.convertToDebtDto(debts)
 
-	return DebtResponse{
+	return shared.ServiceResponse{
 		Status:  "success",
 		Message: "debts retrieved successfully",
 		Data:    debtsDto,
 	}
 }
 
-func (s *debtService) GetDebtInstallments(ctx context.Context, clientId, debtId ulid.ULID) DebtResponse {
+func (s *debtService) GetDebtInstallments(ctx context.Context, clientId, debtId ulid.ULID) shared.ServiceResponse {
 	cliExists, err := s.clientRepo.ClientExists(ctx, clientId)
 	if err != nil {
 		log.Println(err)
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "error in validate clientid provided",
 		}
 	}
 
 	if !cliExists {
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "client not found",
 		}
@@ -248,7 +249,7 @@ func (s *debtService) GetDebtInstallments(ctx context.Context, clientId, debtId 
 	installments, err := s.debtRepo.DebtInstallments(ctx, debtId)
 	if err != nil {
 		log.Println(err)
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "failed to get debt installments",
 		}
@@ -276,14 +277,14 @@ func (s *debtService) GetDebtInstallments(ctx context.Context, clientId, debtId 
 		})
 	}
 
-	return DebtResponse{
+	return shared.ServiceResponse{
 		Status:  "success",
 		Message: "installments retrieved",
 		Data:    installmentsDto,
 	}
 }
 
-func (s *debtService) Debts(ctx context.Context, params paginate.PaginateRequest) DebtResponse {
+func (s *debtService) Debts(ctx context.Context, params paginate.PaginateRequest) shared.ServiceResponse {
 	pagDto := paginate.SearchDto{
 		Limit:         params.Limit,
 		TermSearch:    params.SearchTerm,
@@ -298,7 +299,7 @@ func (s *debtService) Debts(ctx context.Context, params paginate.PaginateRequest
 
 	if err != nil {
 		log.Println("Error retrieving debts:", err)
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "error retrieving debts",
 		}
@@ -306,7 +307,7 @@ func (s *debtService) Debts(ctx context.Context, params paginate.PaginateRequest
 
 	debtsDto := s.convertToDebtDto(result.Data)
 
-	return DebtResponse{
+	return shared.ServiceResponse{
 		Status:  "success",
 		Message: "debts retrieved successfully",
 		Data: paginate.Result{
@@ -316,11 +317,11 @@ func (s *debtService) Debts(ctx context.Context, params paginate.PaginateRequest
 	}
 }
 
-func (s *debtService) PayInstallment(ctx context.Context, pgInfo *PaymentInfoDto) DebtResponse {
+func (s *debtService) PayInstallment(ctx context.Context, pgInfo *PaymentInfoDto) shared.ServiceResponse {
 	debtId, err := ulid.Parse(pgInfo.DebtId)
 	if err != nil {
 		log.Println("Error parsing debt ID:", err)
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "invalid debt ID",
 		}
@@ -329,14 +330,14 @@ func (s *debtService) PayInstallment(ctx context.Context, pgInfo *PaymentInfoDto
 	debt, err := s.debtRepo.GetDebt(ctx, debtId)
 	if err != nil {
 		log.Println("Error retrieving debt:", err)
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "error retrieving debt",
 		}
 	}
 
 	if debt == nil {
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "debt not found",
 		}
@@ -345,7 +346,7 @@ func (s *debtService) PayInstallment(ctx context.Context, pgInfo *PaymentInfoDto
 	err = debt.PayInstallment(pgInfo)
 	if err != nil {
 		log.Println("Error paying installment:", err)
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: err.Error(),
 		}
@@ -354,13 +355,13 @@ func (s *debtService) PayInstallment(ctx context.Context, pgInfo *PaymentInfoDto
 	err = s.debtRepo.Update(ctx, debt)
 	if err != nil {
 		log.Println("Error updating debt:", err)
-		return DebtResponse{
+		return shared.ServiceResponse{
 			Status:  "error",
 			Message: "error updating debt",
 		}
 	}
 
-	return DebtResponse{
+	return shared.ServiceResponse{
 		Status:  "success",
 		Message: "installment paid successfully",
 	}

@@ -22,6 +22,23 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
+-- Name: addresses; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.addresses (
+    id character(26) NOT NULL,
+    street character varying(255) NOT NULL,
+    city character varying(100) NOT NULL,
+    state character varying(100) NOT NULL,
+    zip_code character varying(20) NOT NULL,
+    neighborhood character varying(100) NOT NULL,
+    owner_id character(26) NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+--
 -- Name: cancel_info; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -33,6 +50,23 @@ CREATE TABLE public.cancel_info (
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     debt_id character(26) NOT NULL
+);
+
+
+--
+-- Name: clients; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.clients (
+    id character(26) NOT NULL,
+    name character varying(255) NOT NULL,
+    last_name character varying(255) NOT NULL,
+    document character varying(20) NOT NULL,
+    entity_type character(2) NOT NULL,
+    birth_day date NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    deleted_at timestamp without time zone
 );
 
 
@@ -78,6 +112,20 @@ CREATE TABLE public.installments (
 
 
 --
+-- Name: phones; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.phones (
+    id character(26) NOT NULL,
+    number character varying(20) NOT NULL,
+    description character varying(255),
+    owner_id character(26) NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+--
 -- Name: reversal_info; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -105,11 +153,27 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: addresses addresses_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.addresses
+    ADD CONSTRAINT addresses_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: cancel_info cancel_info_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.cancel_info
     ADD CONSTRAINT cancel_info_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: clients clients_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.clients
+    ADD CONSTRAINT clients_pkey PRIMARY KEY (id);
 
 
 --
@@ -129,6 +193,14 @@ ALTER TABLE ONLY public.installments
 
 
 --
+-- Name: phones phones_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.phones
+    ADD CONSTRAINT phones_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: reversal_info reversal_info_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -145,6 +217,20 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
+-- Name: idx_addresses_owner_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_addresses_owner_id ON public.addresses USING btree (owner_id);
+
+
+--
+-- Name: idx_addresses_zip_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_addresses_zip_code ON public.addresses USING btree (zip_code);
+
+
+--
 -- Name: idx_cancel_info_cancel_date; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -156,6 +242,13 @@ CREATE INDEX idx_cancel_info_cancel_date ON public.cancel_info USING btree (canc
 --
 
 CREATE INDEX idx_cancel_info_cancelled_by ON public.cancel_info USING btree (cancelled_by);
+
+
+--
+-- Name: idx_clients_document; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_clients_document ON public.clients USING btree (document);
 
 
 --
@@ -205,6 +298,20 @@ CREATE INDEX idx_installments_number ON public.installments USING btree (number)
 --
 
 CREATE INDEX idx_installments_status ON public.installments USING btree (status);
+
+
+--
+-- Name: idx_phones_number; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_phones_number ON public.phones USING btree (number);
+
+
+--
+-- Name: idx_phones_owner_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_phones_owner_id ON public.phones USING btree (owner_id);
 
 
 --

@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	clientMemory "github.com/henriquerocha2004/quem-me-deve-api/client/memory"
-	"github.com/henriquerocha2004/quem-me-deve-api/debt"
-	"github.com/henriquerocha2004/quem-me-deve-api/debt/mocks"
+	"github.com/henriquerocha2004/quem-me-deve-api/core/debt"
+	"github.com/henriquerocha2004/quem-me-deve-api/core/debt/mocks"
+	"github.com/henriquerocha2004/quem-me-deve-api/core/shared"
 	"github.com/henriquerocha2004/quem-me-deve-api/internal/http/controllers"
 	"github.com/henriquerocha2004/quem-me-deve-api/internal/http/customvalidate"
 	"github.com/oklog/ulid/v2"
@@ -28,7 +28,10 @@ func TestDebtController(t *testing.T) {
 		debtRepo := mocks.NewMockRepository(ctrl)
 		debtRepo.EXPECT().Save(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
-		service := debt.NewDebtService(debtRepo, clientMemory.NewClientDebtReader())
+		cliRepository := mocks.NewMockClientReader(ctrl)
+		cliRepository.EXPECT().ClientExists(gomock.Any(), gomock.Any()).Return(true, nil).Times(1)
+
+		service := debt.NewDebtService(debtRepo, cliRepository)
 		controller := controllers.NewDebtController(service)
 
 		r := chi.NewRouter()
@@ -61,7 +64,10 @@ func TestDebtController(t *testing.T) {
 		debtRepo := mocks.NewMockRepository(ctrl)
 		debtRepo.EXPECT().Save(gomock.Any(), gomock.Any()).Return(nil).Times(0)
 
-		service := debt.NewDebtService(debtRepo, clientMemory.NewClientDebtReader())
+		cliRepository := mocks.NewMockClientReader(ctrl)
+		cliRepository.EXPECT().ClientExists(gomock.Any(), gomock.Any()).Return(true, nil).Times(0)
+
+		service := debt.NewDebtService(debtRepo, cliRepository)
 		controller := controllers.NewDebtController(service)
 
 		r := chi.NewRouter()
@@ -201,7 +207,7 @@ func TestDebtController(t *testing.T) {
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
-		var response debt.DebtResponse
+		var response shared.ServiceResponse
 		err := json.NewDecoder(w.Body).Decode(&response)
 		assert.Nil(t, err)
 
@@ -293,7 +299,7 @@ func TestDebtController(t *testing.T) {
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
-		var response debt.DebtResponse
+		var response shared.ServiceResponse
 		err := json.NewDecoder(w.Body).Decode(&response)
 		assert.Nil(t, err)
 
@@ -406,7 +412,7 @@ func TestDebtController(t *testing.T) {
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
-		var response debt.DebtResponse
+		var response shared.ServiceResponse
 		err := json.NewDecoder(w.Body).Decode(&response)
 		assert.Nil(t, err)
 
@@ -478,7 +484,7 @@ func TestDebtController(t *testing.T) {
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
-		var response debt.DebtResponse
+		var response shared.ServiceResponse
 		err = json.NewDecoder(w.Body).Decode(&response)
 		assert.Nil(t, err)
 
@@ -572,7 +578,7 @@ func TestDebtController(t *testing.T) {
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
-		var response debt.DebtResponse
+		var response shared.ServiceResponse
 		err = json.NewDecoder(w.Body).Decode(&response)
 		assert.Nil(t, err)
 
@@ -660,7 +666,7 @@ func TestDebtController(t *testing.T) {
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
-		var response debt.DebtResponse
+		var response shared.ServiceResponse
 		err = json.NewDecoder(w.Body).Decode(&response)
 		assert.Nil(t, err)
 

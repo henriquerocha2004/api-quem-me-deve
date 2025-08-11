@@ -3,7 +3,7 @@ package gorm
 import (
 	"context"
 
-	"github.com/henriquerocha2004/quem-me-deve-api/debt"
+	"github.com/henriquerocha2004/quem-me-deve-api/core/debt"
 	"github.com/henriquerocha2004/quem-me-deve-api/pkg/paginate"
 	"github.com/lib/pq"
 	"github.com/oklog/ulid/v2"
@@ -95,7 +95,13 @@ func (g *GormDebtRepository) GetDebts(ctx context.Context, pagData paginate.Sear
 		query = query.Where("description LIKE ?", "%"+pagData.TermSearch+"%")
 	}
 
-	result := query.Find(&models)
+	if len(pagData.ColumnSearch) > 0 {
+		for _, column := range pagData.ColumnSearch {
+			query = query.Where(column.ColumnName+" = ?", column.ColumnValue)
+		}
+	}
+
+	result := query.WithContext(ctx).Find(&models)
 
 	if result.Error != nil {
 		return nil, result.Error

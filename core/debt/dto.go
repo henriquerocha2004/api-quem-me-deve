@@ -28,12 +28,6 @@ type InstallmentDto struct {
 	Number        int     `json:"number"`
 }
 
-type DebtResponse struct {
-	Status  string `json:"status"`
-	Message string `json:"message"`
-	Data    any    `json:"data"`
-}
-
 type PaginationResult struct {
 	TotalRecords int     `json:"total_records"`
 	Data         []*Debt `json:"data"`

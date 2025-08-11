@@ -9,8 +9,9 @@ import (
 	"time"
 
 	setupdbtests "github.com/henriquerocha2004/quem-me-deve-api/config/setupDbTests"
-	"github.com/henriquerocha2004/quem-me-deve-api/debt"
-	"github.com/henriquerocha2004/quem-me-deve-api/debt/gorm"
+	"github.com/henriquerocha2004/quem-me-deve-api/core/debt"
+	"github.com/henriquerocha2004/quem-me-deve-api/core/debt/gorm"
+	ormdb "github.com/henriquerocha2004/quem-me-deve-api/core/shared/gorm"
 	"github.com/henriquerocha2004/quem-me-deve-api/pkg/helpers"
 	"github.com/henriquerocha2004/quem-me-deve-api/pkg/paginate"
 	"github.com/joho/godotenv"
@@ -37,7 +38,7 @@ func TestMain(m *testing.M) {
 		os.Getenv("DB_NAME"),
 	)
 
-	gormDB, _ = gorm.NewGorm(dsn)
+	gormDB, _ = ormdb.NewGorm(dsn)
 	sql, _ := gormDB.DB()
 	defer sql.Close()
 	m.Run()

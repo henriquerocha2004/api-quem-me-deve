@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/henriquerocha2004/quem-me-deve-api/debt"
+	"github.com/henriquerocha2004/quem-me-deve-api/core/debt"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/assert"
 )

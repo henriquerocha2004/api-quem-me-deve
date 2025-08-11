@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/henriquerocha2004/quem-me-deve-api/debt"
-	"github.com/henriquerocha2004/quem-me-deve-api/debt/mocks"
+	"github.com/henriquerocha2004/quem-me-deve-api/core/debt"
+	"github.com/henriquerocha2004/quem-me-deve-api/core/debt/mocks"
 	"github.com/henriquerocha2004/quem-me-deve-api/pkg/paginate"
 	"github.com/henriquerocha2004/quem-me-deve-api/pkg/validateErrors"
 	"github.com/oklog/ulid/v2"

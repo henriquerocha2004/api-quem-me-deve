@@ -38,6 +38,12 @@ build-db:
 	make migrate-up
 	make refresh-schema
 
+mock:
+	@echo "Gerando mock da interface $(interfacePath)..."
+	@echo "Destino: $(destinationPath)"
+	@echo "Package Name: $(packageName)"
+	@mockgen -source=$(interfacePath) -destination=$(destinationPath) -package=$(packageName)
+
 # Mostrar ajuda
 help:
 	@echo "Comandos disponíveis:"
@@ -46,3 +52,4 @@ help:
 	@echo "  make down           Desfaz a última migration"
 	@echo "  make redo           Refaz todas as migrations (drop + up)"
 	@echo "  make version        Mostra a versão atual"
+	@echo "  make-mock           Cria um arquivo de mock usando mockgen"
