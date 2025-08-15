@@ -21,6 +21,8 @@ RUN wget https://github.com/sqlc-dev/sqlc/releases/download/v1.24.0/sqlc_1.24.0_
 # instalar client POSTGRESQL    
 RUN apk add --no-cache postgresql-client make
 
+RUN go install go.uber.org/mock/mockgen@latest
+
 # Instalar dependências de desenvolvimento
 RUN apk add --no-cache git
 

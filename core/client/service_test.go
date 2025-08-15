@@ -168,8 +168,13 @@ func TestClientService(t *testing.T) {
 			&c,
 		}
 
+		resultSearch := client.PaginationResult{
+			TotalRecords: 1,
+			Data:         clients,
+		}
+
 		cliRepo := mocks.NewMockRepository(ctrl)
-		cliRepo.EXPECT().FindAll(gomock.Any(), gomock.Any()).Times(1).Return(clients, nil)
+		cliRepo.EXPECT().FindAll(gomock.Any(), gomock.Any()).Times(1).Return(&resultSearch, nil)
 
 		service := client.NewClientService(cliRepo)
 		result := service.FindByCriteria(context.Background(), paginate.PaginateRequest{
@@ -177,7 +182,7 @@ func TestClientService(t *testing.T) {
 			Limit: 10,
 		})
 
-		data := result.Data.([]client.ClientRequestDto)
+		data := result.Data.(paginate.Result).Data.([]client.ClientRequestDto)
 		assert.Equal(t, result.Status, "success")
 		assert.Len(t, data, 1)
 	})

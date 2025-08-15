@@ -183,7 +183,7 @@ func (s *Service) FindByCriteria(ctx context.Context, criteria paginate.Paginate
 	pagDto.SetPage(criteria.Page)
 	pagDto.AddColumnSearch(criteria.ColumnSearch)
 
-	clientsModel, err := s.repository.FindAll(ctx, pagDto)
+	result, err := s.repository.FindAll(ctx, pagDto)
 
 	if err != nil {
 		return shared.ServiceResponse{
@@ -192,12 +192,15 @@ func (s *Service) FindByCriteria(ctx context.Context, criteria paginate.Paginate
 		}
 	}
 
-	clientsDto := s.convertToClientDto(clientsModel)
+	clientsDto := s.convertToClientDto(result.Data)
 
 	return shared.ServiceResponse{
 		Status:  "success",
 		Message: "clients found successfully",
-		Data:    clientsDto,
+		Data: paginate.Result{
+			TotalRecords: result.TotalRecords,
+			Data:         clientsDto,
+		},
 	}
 }
 

@@ -13,6 +13,7 @@ import (
 	ormdb "github.com/henriquerocha2004/quem-me-deve-api/core/shared/gorm"
 	"github.com/henriquerocha2004/quem-me-deve-api/pkg/document"
 	"github.com/henriquerocha2004/quem-me-deve-api/pkg/helpers"
+	"github.com/henriquerocha2004/quem-me-deve-api/pkg/paginate"
 	"github.com/joho/godotenv"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/suite"
@@ -129,4 +130,141 @@ func (s *ClientRepositorySuiteTest) TestShouldUpdateClient() {
 	s.NotNil(cliDb, "Expected updated client to be found")
 	s.Equal("Jane", cliDb.Name, "Expected updated name to match")
 	s.Equal("Smith", cliDb.LastName, "Expected updated last name to match")
+}
+
+func (s *ClientRepositorySuiteTest) TestShouldDeleteClient() {
+	clientRepo := NewGormClientRepository(gormDB)
+	now := time.Now()
+	client := &client.Client{
+		Id:         ulid.Make(),
+		Name:       "John",
+		LastName:   "Doe",
+		EntityType: client.Individual,
+		Document:   document.Document("61824136030"),
+		BirthDay:   &now,
+	}
+
+	err := clientRepo.Create(context.Background(), client)
+	s.NoError(err, "Expected no error when creating client")
+
+	err = clientRepo.Delete(context.Background(), client.Id)
+	s.NoError(err, "Expected no error when deleting client")
+
+	cliDb, err := clientRepo.FindById(context.Background(), client.Id)
+	s.Error(err, "client not found")
+	s.Nil(cliDb)
+}
+
+func (s *ClientRepositorySuiteTest) TestShouldFindByDocument() {
+	clientRepo := NewGormClientRepository(gormDB)
+	now := time.Now()
+	client := &client.Client{
+		Id:         ulid.Make(),
+		Name:       "John",
+		LastName:   "Doe",
+		EntityType: client.Individual,
+		Document:   document.Document("61824136030"),
+		BirthDay:   &now,
+	}
+
+	err := clientRepo.Create(context.Background(), client)
+	s.NoError(err, "Expected no error when creating client")
+
+	cliDb, err := clientRepo.FindByDocument(context.Background(), "61824136030")
+	s.NoError(err, "Expected no error when finding client by document")
+	s.NotNil(cliDb, "Expected client to be found")
+	s.Equal(client.Id, cliDb.Id, "Expected found client ID to match")
+}
+
+func (s *ClientRepositorySuiteTest) TestShouldFindAllClients() {
+	clientRepo := NewGormClientRepository(gormDB)
+
+	now := time.Now()
+	client1 := &client.Client{
+		Id:         ulid.Make(),
+		Name:       "John",
+		LastName:   "Doe",
+		EntityType: client.Individual,
+		Document:   document.Document("61824136030"),
+		BirthDay:   &now,
+	}
+
+	client2 := &client.Client{
+		Id:         ulid.Make(),
+		Name:       "Jane",
+		LastName:   "Smith",
+		EntityType: client.Individual,
+		Document:   document.Document("61824136031"),
+		BirthDay:   &now,
+	}
+
+	err := clientRepo.Create(context.Background(), client1)
+	s.NoError(err, "Expected no error when creating client 1")
+
+	err = clientRepo.Create(context.Background(), client2)
+	s.NoError(err, "Expected no error when creating client 2")
+
+	searchDto := paginate.SearchDto{
+		Limit: 10,
+	}
+
+	clients, err := clientRepo.FindAll(context.Background(), searchDto)
+	s.NoError(err, "Expected no error when finding all clients")
+	s.Len(clients.Data, 2, "Expected 2 clients to be found")
+}
+
+func (s *ClientRepositorySuiteTest) TestShouldReturnEmptyWhenNoClients() {
+	clientRepo := NewGormClientRepository(gormDB)
+
+	searchDto := paginate.SearchDto{
+		Limit: 10,
+	}
+
+	clients, err := clientRepo.FindAll(context.Background(), searchDto)
+	s.NoError(err, "Expected no error when finding all clients")
+	s.Len(clients.Data, 0, "Expected no clients to be found")
+}
+
+func (s *ClientRepositorySuiteTest) TestShouldReturnClientById() {
+	clientRepo := NewGormClientRepository(gormDB)
+
+	now := time.Now()
+	client := &client.Client{
+		Id:         ulid.Make(),
+		Name:       "John",
+		LastName:   "Doe",
+		EntityType: client.Individual,
+		Document:   document.Document("61824136030"),
+		BirthDay:   &now,
+	}
+
+	err := clientRepo.Create(context.Background(), client)
+	s.NoError(err, "Expected no error when creating client")
+
+	cliDb, err := clientRepo.FindById(context.Background(), client.Id)
+	s.NoError(err, "Expected no error when finding client by ID")
+	s.NotNil(cliDb, "Expected client to be found")
+	s.Equal(client.Id, cliDb.Id, "Expected found client ID to match")
+}
+
+func (s *ClientRepositorySuiteTest) TestShouldInformIfClientExist() {
+	clientRepo := NewGormClientRepository(gormDB)
+
+	now := time.Now()
+	client := &client.Client{
+		Id:         ulid.Make(),
+		Name:       "John",
+		LastName:   "Doe",
+		EntityType: client.Individual,
+		Document:   document.Document("61824136030"),
+		BirthDay:   &now,
+	}
+
+	err := clientRepo.Create(context.Background(), client)
+	s.NoError(err, "Expected no error when creating client")
+
+	CliDebtRepo := NewClientReaderGormRepository(gormDB)
+	exist, err := CliDebtRepo.ClientExists(context.Background(), client.Id)
+	s.NoError(err, "Expected no error when checking if client exists")
+	s.True(exist, "Expected client to exist")
 }
