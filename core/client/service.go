@@ -10,24 +10,25 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-type ClientService interface {
+type Service interface {
 	Create(ctx context.Context, dto *ClientRequestDto) shared.ServiceResponse
 	Update(ctx context.Context, id ulid.ULID, dto *ClientRequestDto) shared.ServiceResponse
 	Delete(ctx context.Context, id ulid.ULID) shared.ServiceResponse
-	FindByCriteria(ctx context.Context, criteria paginate.PaginateRequest) shared.ServiceResponse
+	FindById(ctx context.Context, id ulid.ULID) shared.ServiceResponse
+	FindByCriteria(ctx context.Context, criteria *paginate.PaginateRequest) shared.ServiceResponse
 }
 
-type Service struct {
+type ClientService struct {
 	repository Repository
 }
 
-func NewClientService(repository Repository) *Service {
-	return &Service{
+func NewClientService(repository Repository) *ClientService {
+	return &ClientService{
 		repository: repository,
 	}
 }
 
-func (s *Service) Create(ctx context.Context, dto *ClientRequestDto) shared.ServiceResponse {
+func (s *ClientService) Create(ctx context.Context, dto *ClientRequestDto) shared.ServiceResponse {
 
 	c, err := s.repository.FindByDocument(ctx, dto.Document)
 
@@ -89,7 +90,7 @@ func (s *Service) Create(ctx context.Context, dto *ClientRequestDto) shared.Serv
 	}
 }
 
-func (s *Service) Update(ctx context.Context, id ulid.ULID, dto *ClientRequestDto) shared.ServiceResponse {
+func (s *ClientService) Update(ctx context.Context, id ulid.ULID, dto *ClientRequestDto) shared.ServiceResponse {
 
 	birth, _ := time.Parse(time.DateOnly, dto.BirthDay)
 
@@ -135,7 +136,7 @@ func (s *Service) Update(ctx context.Context, id ulid.ULID, dto *ClientRequestDt
 	}
 }
 
-func (s *Service) Delete(ctx context.Context, id ulid.ULID) shared.ServiceResponse {
+func (s *ClientService) Delete(ctx context.Context, id ulid.ULID) shared.ServiceResponse {
 	if err := s.repository.Delete(ctx, id); err != nil {
 		return shared.ServiceResponse{
 			Status:  "error",
@@ -149,7 +150,7 @@ func (s *Service) Delete(ctx context.Context, id ulid.ULID) shared.ServiceRespon
 	}
 }
 
-func (s *Service) FindById(ctx context.Context, id ulid.ULID) shared.ServiceResponse {
+func (s *ClientService) FindById(ctx context.Context, id ulid.ULID) shared.ServiceResponse {
 	client, err := s.repository.FindById(ctx, id)
 	if err != nil {
 		return shared.ServiceResponse{
@@ -172,7 +173,7 @@ func (s *Service) FindById(ctx context.Context, id ulid.ULID) shared.ServiceResp
 	}
 }
 
-func (s *Service) FindByCriteria(ctx context.Context, criteria paginate.PaginateRequest) shared.ServiceResponse {
+func (s *ClientService) FindByCriteria(ctx context.Context, criteria *paginate.PaginateRequest) shared.ServiceResponse {
 	pagDto := paginate.SearchDto{
 		Limit:         criteria.Limit,
 		SortField:     criteria.SortField,
@@ -204,7 +205,7 @@ func (s *Service) FindByCriteria(ctx context.Context, criteria paginate.Paginate
 	}
 }
 
-func (s *Service) convertToClientDto(clients []*Client) []ClientRequestDto {
+func (s *ClientService) convertToClientDto(clients []*Client) []ClientRequestDto {
 	var clientsDto []ClientRequestDto
 
 	for _, c := range clients {

@@ -3,7 +3,7 @@ package client
 type ClientRequestDto struct {
 	Name       string              `json:"name" validate:"required"`
 	LastName   string              `json:"last_name" validate:"required"`
-	BirthDay   string              `json:"birth_day" validate:"required,dateFormat:YYYY-MM-DD"`
+	BirthDay   string              `json:"birthday" validate:"required,dateFormat:YYYY-MM-DD"`
 	EntityType string              `json:"entity_type" validate:"required"`
 	Document   string              `json:"document" validate:"required"`
 	Phones     []PhoneRequestDto   `json:"phones,omitempty"`

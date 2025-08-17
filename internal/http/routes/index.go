@@ -9,6 +9,7 @@ func Start(d *container.Dependencies) *chi.Mux {
 	r := chi.NewRouter()
 	r.Route("/v1", func(r chi.Router) {
 		r.Mount("/debt", DebtRoutes(d))
+		r.Mount("/client", ClientRoutes(d))
 	})
 
 	return r

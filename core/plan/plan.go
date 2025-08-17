@@ -3,12 +3,20 @@ package plan
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/oklog/ulid/v2"
 )
 
 const (
 	Free planType = iota
-	Starter
 	Pro
+)
+
+type FeatureDesc string
+
+const (
+	FeatureDebt   FeatureDesc = "debt"
+	FeatureClient FeatureDesc = "client"
 )
 
 type planType int
@@ -36,25 +44,31 @@ func (p *planType) UnmarshalJSON(b []byte) error {
 }
 
 var PlanTypeString = map[planType]string{
-	Free:    "Free",
-	Starter: "Starter",
-	Pro:     "Pro",
+	Free: "Free",
+	Pro:  "Pro",
 }
 
 var PlanTypeValue = map[string]planType{
-	"Free":    Free,
-	"Starter": Starter,
-	"Pro":     Pro,
-}
-
-type Feature struct {
-	Name          string
-	ResourceLimit uint
+	"Free": Free,
+	"Pro":  Pro,
 }
 
 type Plan struct {
+	Id       ulid.ULID
 	Type     planType
 	Price    float64
 	Features []Feature
-	Status   string
+}
+
+func (p *Plan) AddFeature(featDesc FeatureDesc, limit uint) {
+	feature := Feature{
+		Name:          featDesc,
+		ResourceLimit: limit,
+	}
+	p.Features = append(p.Features, feature)
+}
+
+type Feature struct {
+	Name          FeatureDesc
+	ResourceLimit uint
 }

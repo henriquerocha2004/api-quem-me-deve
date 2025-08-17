@@ -29,7 +29,6 @@ func TestDebtController(t *testing.T) {
 		debtRepo.EXPECT().Save(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 		cliRepository := mocks.NewMockClientReader(ctrl)
-		cliRepository.EXPECT().ClientExists(gomock.Any(), gomock.Any()).Return(true, nil).Times(1)
 
 		service := debt.NewDebtService(debtRepo, cliRepository)
 		controller := controllers.NewDebtController(service)

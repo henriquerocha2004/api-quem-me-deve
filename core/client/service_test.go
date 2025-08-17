@@ -177,10 +177,12 @@ func TestClientService(t *testing.T) {
 		cliRepo.EXPECT().FindAll(gomock.Any(), gomock.Any()).Times(1).Return(&resultSearch, nil)
 
 		service := client.NewClientService(cliRepo)
-		result := service.FindByCriteria(context.Background(), paginate.PaginateRequest{
+		pgRequest := &paginate.PaginateRequest{
 			Page:  1,
 			Limit: 10,
-		})
+		}
+
+		result := service.FindByCriteria(context.Background(), pgRequest)
 
 		data := result.Data.(paginate.Result).Data.([]client.ClientRequestDto)
 		assert.Equal(t, result.Status, "success")

@@ -6,9 +6,11 @@ import (
 	"os"
 	"time"
 
-	cliMemory "github.com/henriquerocha2004/quem-me-deve-api/client/memory"
-	"github.com/henriquerocha2004/quem-me-deve-api/debt"
-	"github.com/henriquerocha2004/quem-me-deve-api/debt/gorm"
+	"github.com/henriquerocha2004/quem-me-deve-api/core/client"
+	gormClient "github.com/henriquerocha2004/quem-me-deve-api/core/client/gorm"
+	"github.com/henriquerocha2004/quem-me-deve-api/core/debt"
+	gormDebt "github.com/henriquerocha2004/quem-me-deve-api/core/debt/gorm"
+	gormShared "github.com/henriquerocha2004/quem-me-deve-api/core/shared/gorm"
 	"github.com/henriquerocha2004/quem-me-deve-api/internal/container"
 	"github.com/henriquerocha2004/quem-me-deve-api/internal/http/routes"
 )
@@ -43,19 +45,23 @@ func fillDependencies() *container.Dependencies {
 		os.Getenv("DB_NAME"),
 	)
 
-	gormDB, err := gorm.NewGorm(dsn)
+	gormDB, err := gormShared.NewGorm(dsn)
 	if err != nil {
 		fmt.Println("Error connecting to the database:", err)
 		return nil
 	}
 
 	// debt dependencies
-	debtRepo := gorm.NewGormDebtRepository(gormDB)
-	cliRepo := cliMemory.NewClientDebtReader()
+	debtRepo := gormDebt.NewGormDebtRepository(gormDB)
+	cliRepo := gormClient.NewClientReaderGormRepository(gormDB)
+	debtService := debt.NewDebtService(debtRepo, cliRepo)
 
-	service := debt.NewDebtService(debtRepo, cliRepo)
+	// client dependencies
+	clientRepo := gormClient.NewGormClientRepository(gormDB)
+	clientService := client.NewClientService(clientRepo)
 
 	return &container.Dependencies{
-		DebtService: service,
+		DebtService:   debtService,
+		ClientService: clientService,
 	}
 }
